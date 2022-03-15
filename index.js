@@ -13,6 +13,35 @@ canvas.height = 600
 // (3)
 const gravity = 1.5
 
+// Contar coordenadas horizontais para descobrir o ponto final (7)
+// O valor de contagem deve ser == quantidade altera ao pressionar
+let scrollOffset = 0
+
+// Penalidades (10)
+const gap_normal = 100
+const gap_large = 170
+
+// Monitorar movimentos horizontais do jogador (4)
+const keys = {
+  right: { pressed: false },
+  left: { pressed: false }
+}
+
+// =============== IMAGENS USADAS ===============
+// const image = document.getElementById('platform')
+// const image2 = document.getElementById('platform2')
+let platformOne = new Image()
+let platformTwo = new Image()
+let surface = new Image()
+let gameBackground = new Image()
+let hills = new Image()
+
+platformOne.src = './assets/platform_small.png'
+platformTwo.src = './assets/platformSmallTall.png'
+surface.src = './assets/surface.png'
+gameBackground.src = './assets/background.png'
+hills.src = './assets/hills.png'
+
 // ------------------------------------------------------------ 2 ------------------------------------------------------------
 class Player {
   /* Características do jogador
@@ -31,6 +60,7 @@ class Player {
       y: 0
     }
 
+    this.speed = 10
     this.width = 30
     this.height = 30
   }
@@ -45,20 +75,19 @@ class Player {
     c.fillRect(this.position.x, this.position.y, this.width, this.height)
   }
 
-  /* Animação do jogador (3)
-  1 = chamar o jogador em forma de figura geométrica
-  2 = incrementações que simulam sua movimentação: vertical, horizontal
-  3 = Impedir que a forma do jogador (retângulo) exceda o fundo da tela
-  */
   update() {
+    // chamar o jogador em forma de figura geométrica
     this.draw()
 
+    // incrementações que simulam sua movimentação: vertical, horizontal
     this.position.y += this.velocity.y
     this.position.x += this.velocity.x
 
+    // Impedir jogador de sumir da tela (para baixo)
     if (this.position.y + this.height + this.velocity.y <= canvas.height)
       this.velocity.y += gravity
-    else this.velocity.y = 0
+    // Impedir aqui (desativado)
+    // else this.velocity.y = 0
   }
 }
 
@@ -113,122 +142,115 @@ class GenericObject {
   }
 }
 
-// Objeto para gerenciador o jogador (2)
-const player = new Player()
-
-// Var para referenciar imagens (topo da página)
-// const image = document.getElementById('platform')
-// const image2 = document.getElementById('platform2')
-const platformOne = new Image()
-const surface = new Image()
-const gameBackground = new Image()
-
-platformOne.src = './assets/platform_small.png'
-surface.src = './assets/surface.png'
-gameBackground.src = './assets/background.png'
-
 // Configuração para alinhar superfície
 const surfaceSize = -surface.width
 
-// Objeto para gerenciador plataformas (5)
-const platforms = [
-  new Platform({ x: 170, y: 400, image: platformOne }),
-  new Platform({ x: 270, y: 450, image: platformOne }),
-  // Superfícies para <-
-  new Platform({ x: surfaceSize * 2, y: 570, image: surface }),
-  new Platform({ x: surfaceSize, y: 570, image: surface }),
-  new Platform({ x: surface.width, y: 570, image: surface }),
-  // Superfície referência (inicial)
-  new Platform({ x: 0, y: 570, image: surface }),
-  // Superfícies para ->
-  new Platform({ x: surface.width * 2, y: 570, image: surface }),
-  new Platform({ x: surface.width * 3, y: 570, image: surface }),
-  new Platform({ x: surface.width * 4, y: 570, image: surface }),
-  new Platform({ x: surface.width * 5, y: 570, image: surface })
-]
+// =============== OBJETOS (INICIALMENTE VAZIOS) ===============
+let player = new Player() // Jogador (2)
+let platforms = [] // Plataformas (5)
+let genericObjects = [] // Complementos (8)
 
-// Objeto para gerenciar imagens que não são plataformas
-const genericObjects = [
-  // Imagem de fundo
-  new GenericObject({
-    x: -1,
-    y: -1,
-    image: gameBackground
-  })
-]
+// Configurar valores dos OBJETOS acima se: iniciar, perder (CRIAÇÃO)
+function init() {
+  player = new Player()
 
-// Monitorar movimentos horizontais do jogador (4)
-const keys = {
-  right: {
-    pressed: false
-  },
-  left: {
-    pressed: false
-  }
+  platforms = [
+    new Platform({ x: surfaceSize * 3, y: 570, image: surface }), // superfície <- (pós lacuna)
+    new Platform({ x: surfaceSize * 2 + gap_normal, y: 570, image: surface }), // superfície <- (com lacuna)
+    new Platform({ x: surfaceSize, y: 570, image: surface }), // superfície <-
+    // superfície pioneira
+    new Platform({ x: 0, y: 570, image: surface }),
+    new Platform({ x: surface.width, y: 570, image: surface }), // superfície -> (posicionamento = largura)
+    new Platform({ x: surface.width * 2 + gap_normal, y: 570, image: surface }), // superfície -> (com lacuna)
+    new Platform({
+      x: surface.width * 3 + gap_large,
+      y: 420,
+      image: platformTwo
+    }), // y alterado para ficar mais alto
+    new Platform({ x: 170, y: 400, image: platformOne }), // plataforma
+    new Platform({ x: 270, y: 450, image: platformOne }) // plataforma
+  ]
+
+  genericObjects = [
+    new GenericObject({ x: -1, y: -1, image: gameBackground }), // Imagem de fundo
+    new GenericObject({ x: -1, y: -1, image: hills }) // Montanhas/colinas
+  ]
 }
 
-// Contar coordenadas horizontais para descobrir o ponto final (7)
-// O valor de contagem deve ser == quantidade altera ao pressionar
-let scrollOffset = 0
-
-/* Procedimento e gerencimaneto de movimento (jogador e plataforma)
-1 = tornar essa função um loop
-2 = reconstruir o retângulo conforma a tela atualiza
-2 = o procedimento é uma espécie de teleporte, independete de mover
-3 = chamar as configurações de movimentação
-4 = Inserção da plataforma
-5 = realizar movimentos horizontais por ações específicas 
-*/
 function animate() {
+  // Tornar a própria função um loop
   requestAnimationFrame(animate)
 
-  // posição horizontal, vertical, largura, altura
   c.fillStyle = 'yellow'
   c.fillRect(0, 0, canvas.width, canvas.height)
+  // posição horizontal, vertical, largura, altura
   // c.clearRect(0, 0, canvas.width, canvas.height)
 
-  //
+  // OBJETOS DE COMPLEMENTO: Iteração + renderização de sua imagem
   genericObjects.forEach(genericObject => {
     genericObject.draw()
   })
 
-  //
+  // OBJETOS DE PLATAFORMA/SUPERFÍCIE: Iteração + renderização de sua imagem
   platforms.forEach(platform => {
     platform.draw()
   })
 
+  // Criar o retângulo do jogador
   player.update()
 
-  /*
-  && (1) = Impedir jogador de sair da tela ->
-  && (1) = Valor igual ao tamanho do canvas não funcionou (excedeu)
-  && (2) = Impedir jogador de sair da tela <-
-  (Mandatório) .velocity == .position
-  */
+  // Fazer o jogador andar para -> e impedir jogador de sair da tela ->
   if (keys.right.pressed && player.position.x < 480) {
-    player.velocity.x = 5
-  } else if (keys.left.pressed && player.position.x > 70) {
-    player.velocity.x = -5
+    player.velocity.x = player.speed
+  }
+
+  // Impedir jogador de sair da tela <-
+  else if (keys.left.pressed && player.position.x > 70) {
+    player.velocity.x = -player.speed
   } else {
     player.velocity.x = 0
 
+    // Se pressionar ->: contar progresso e mover plataforma simultaneamente na mesma direção e propoção
     if (keys.right.pressed) {
       scrollOffset += 5
+      // Iterar sobre todas as plataformas
+      // Acompanhar jogador para direita
       platforms.forEach(platform => {
-        platform.position.x -= 5
+        platform.position.x -= player.speed
       })
-    } else if (keys.left.pressed) {
-      scrollOffset -= 5
+      // Iterar sobre todos os objetos genéricos
+      // Efeito paralaxe para a ->
+      genericObjects.forEach(genericObject => {
+        genericObject.position.x -= player.speed * 0.66
+      })
+    }
+
+    // Se pressionar <-: contar progresso e mover plataforma simultaneamente na mesma direção e propoção
+    else if (keys.left.pressed) {
+      scrollOffset -= player.speed
+
+      // Iterar sobre todas as plataformas
+      // Acompanhar jogador para esquerda
       platforms.forEach(platform => {
-        platform.position.x += 5
+        platform.position.x += player.speed
+      })
+      // Iterar sobre todos os objetos genéricos
+      // Efeito paralaxe para a <-
+      genericObjects.forEach(genericObject => {
+        genericObject.position.x += player.speed * 0.66
       })
     }
   }
 
-  // Verificar se chegou ao fim do cenário(7)
-  console.log(scrollOffset)
+  // Verificar progresso do cenário (7)
+  console.log(`Progresso atual ${scrollOffset}`)
   if (scrollOffset > 2000) {
     console.log('Fim')
+  }
+  // Posição vertical do jogador abaixo da menor posição vertical da janela do jogo
+  if (player.position.y > canvas.height) {
+    console.log('GAME OVER')
+    init()
   }
 
   /* Controle de colisão
@@ -250,13 +272,10 @@ function animate() {
   })
 }
 
-// Chamada da função acima
+init()
 animate()
 
-/* Configurar comandos em caso de tecla pressionada (1 vez/segurar) (4)
-1 = alterar vars conforme a necessidade
-
-EXEMPLOS VÁLIDOS:
+/* EXEMPLOS VÁLIDOS:
 
 if (event.code == 'ArrowDown') {
   console.log('Seta para baixo')
@@ -264,6 +283,8 @@ if (event.code == 'ArrowDown') {
 
 console.log(event.code)
 */
+
+// Configurar comandos em caso de tecla pressionada (1 vez/segurar) (4)
 addEventListener('keydown', event => {
   // console.log(event.key)
   switch (event.key) {
@@ -286,17 +307,7 @@ addEventListener('keydown', event => {
   }
 })
 
-/* Configurar comandos em caso de tecla liberada (tecla solta) (4)
-1 = alterar vars conforme a necessidade
-
-EXEMPLOS VÁLIDOS:
-
-if (event.code == 'ArrowDown') {
-  console.log('Seta para baixo')
-}
-
-console.log(event.code)
-*/
+// Configurar comandos em caso de tecla liberada (tecla solta) (4)
 addEventListener('keyup', event => {
   // console.log(event.key)
   switch (event.key) {
