@@ -355,7 +355,6 @@ function animate() {
   && (2) = cair do lado direito após subir
   && (3) = cair do lado esquerdo após subir
   */
-  //
   platforms.forEach(platform => {
     if (
       player.position.y + player.height <= platform.position.y &&
