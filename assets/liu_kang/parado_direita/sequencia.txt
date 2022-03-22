@@ -1,0 +1,14 @@
+
+
+_1.png = 1 sprite (ok)
+_2.png = 2 sprites (ok)
+_3.png = 3 sprites (ok)
+_4.png = 4 sprites (ok)
+_5.png = 5 sprites (ok)
+_6.png = 6 sprites (ok)
+_7.png = 6 sprites (ok)
+_8.png = 6 sprites (ok)
+_9.png = 6 sprites (ok)
+_10.png = 7 sprites (ok)
+_11.png = 7 sprites (ok)
+_12.png = 7 sprites ()

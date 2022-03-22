@@ -1,0 +1,7 @@
+
+
+Não é melhor combinação encontrada
+1 = 10 sprites
+2 = 11 sprites
+3 = 12 sprites
+4 = 27 sprites

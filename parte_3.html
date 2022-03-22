@@ -29,6 +29,13 @@
         right: { pressed: false },
         left: { pressed: false },
         up: { pressed: false },
+        down: { pressed: false }
+      }
+
+      function timeFunction(action, delay) {
+        setTimeout(function () {
+          console.log(action)
+        }, delay)
       }
 
       class Character {
@@ -37,6 +44,8 @@
           standRightSprite,
           standLeftSprite,
           walkingRightSprite,
+          walkingLeftSprite,
+          jumpRightSprite,
           upperPunchSprite,
           lowKickSprite,
           kickSequenceSprite,
@@ -52,12 +61,14 @@
           speed,
           customWidth,
           customHeight,
-          gravity
+          gravity // quanto maior o valor, mais rápido o ponto y é alcançado para baixo
         }) {
           this.currentSprite = currentSprite
           this.standRightSprite = standRightSprite
           this.standLeftSprite = standLeftSprite
           this.walkingRightSprite = walkingRightSprite
+          this.walkingLeftSprite = walkingLeftSprite
+          this.jumpRightSprite = jumpRightSprite
           this.upperPunchSprite = upperPunchSprite
           this.lowKickSprite = lowKickSprite
           this.kickSequenceSprite = kickSequenceSprite
@@ -76,7 +87,7 @@
           this.gravity = gravity
         }
 
-        '========== EXPLICAÇÃO SOBRE A FUNÇÃO: imageDraw() =========='
+        '========== EXPLICAÇÃO SOBRE A FUNÇÃO: drawImage() =========='
         'Do parâmetro 1 ao 5: perspectiva da imagem'
         'Do parâmetro 6 ao 9: perspectiva do canvas'
         '1 = referência da imagem no computador ou outra fonte'
@@ -101,49 +112,6 @@
             this.customWidth,
             this.customHeight
           )
-        }
-
-        'Ver arquivos: js_drawImage_1.png -> js_drawImage_2.png -> js_drawImage_3.png (arquivos deste projeto)'
-        drawAlternative() {
-          /*
-          EXEMPLO
-          console.log(c.drawImage(liuKangCombo, 0, 0, 42, 105, 100, 100, 90, 200))
-          console.log(c.drawImage(liuKangCombo, 42, 0, 42, 105, 100, 205, 90, 200))
-          console.log(c.drawImage(liuKangCombo, 84, 0, 50, 105, 100, 310, 90, 200))
-          console.log(c.drawImage(liuKangCombo, 134, 0, 60, 105, 100, 420, 90, 200))
-
-          APLICADO AO CONTEXTO DA FUNÇÃO
-          f = fixo
-          a = alterável
-
-          drawImage(liuKangCombo,                      || f
-                    liuKangComboEachFrameWidthCrop[i], || a
-                    0,                                 || f
-                    liuKangComboEachFrameWidth[i],     || a
-                    105,                               || f
-                    100,                               || f
-                    100,                               || f
-                    90,                                || f
-                    200)                               || f
-          */
-
-          // .slice(fixedIndex, i).reduce((partialSum, a) => partialSum + a, 0)
-          for (let i = 0; i < this.xCrops.length; i++) {
-            c.drawImage(
-              this.currentSprite,
-              this.xCrops[i],
-              0,
-              this.eachWidth[i],
-              this.srcHeight,
-              this.x,
-              this.y,
-              this.customWidth,
-              this.customHeight
-            )
-            console.log(
-              `drawImage(${this.xCrops[i]}, 0, ${this.eachWidth[i]}, ${this.srcHeight}, ${this.x}, ${this.y}, ${this.customWidth}, ${this.customHeight})`
-            )
-          }
         }
 
         update() {
@@ -181,7 +149,15 @@
           // RESETAR O SPRITE: ANDANDO <-
           if (
             this.frameCounter > this.frameAmount &&
-            this.currentSprite === this.standLeftSprite
+            this.currentSprite === this.walkingLeftSprite
+          ) {
+            this.frameCounter = 0
+          }
+
+          // PULANDO ->
+          if (
+            this.frameCounter > this.frameAmount &&
+            this.currentSprite === this.jumpRightSprite
           ) {
             this.frameCounter = 0
           }
@@ -210,51 +186,10 @@
             this.frameCounter = 0
           }
 
+          
           /* this.x += this.goHorizontal
           this.y += this.goVertical */
-
-          // RESETAR O SPRITE: PARADO <-
-          /* if (
-            this.frameCounter > this.frameAmount &&
-            this.currentSprite === this.standLeftSprite
-          ) {
-            this.frameCounter = 0
-          } */
-
-          // RESETAR O SPRITE: CAMINHANDO ->
-          /* if (
-            this.frameCounter > this.frameAmount &&
-            this.currentSprite === this.walkRightSprite
-          ) {
-            this.frameCounter = 0
-          } */
-
-          // RESETAR O SPRITE: CAMINHANDO <-
-          /* if (
-            this.frameCounter > this.frameAmount &&
-            this.currentSprite === this.walkLeftSprite
-          ) {
-            this.frameCounter = 0
-          } */
-
-          // RESETAR O SPRITE: PULANDO
-          /* if (
-            this.frameCounter > this.frameAmount &&
-            this.currentSprite === this.jump
-          ) {
-            this.frameCounter = 0
-          } */
-
-          // RESETAR O SPRITE: PULANDO
-          /* if (
-            this.frameCounter > this.frameAmount &&
-            this.currentSprite === this.kick
-          ) {
-            this.frameCounter = 0
-          }
-
-          this.x += this.goHorizontal
-          this.y += this.goVertical */
+         
 
           // ÚLTIMO ADICIONADO
           /* if (this.y + this.height + this.goVertical <= canvas.height) {
@@ -280,6 +215,14 @@
       let liuKangWalkingRight = new Image()
       liuKangWalkingRight.src = './assets/liu_kang_walking_right.png'
 
+      // ANDANDO PARA A ESQUERDA
+      let liuKangWalkingLeft = new Image()
+      liuKangWalkingLeft.src = './assets/liu_kang_walking_left.png'
+
+      // PULANDO ->
+      let liuKangJumpRight = new Image()
+      liuKangJumpRight.src = './assets/liu_kang_jump_right.png'
+
       // GANCHO
       let liuKangUpperPunch = new Image()
       liuKangUpperPunch.src = './assets/liu_kang_upper_punch.png'
@@ -299,6 +242,8 @@
           standRightSprite: liuKangIdleRight,
           standLeftSprite: liuKangIdleLeft,
           walkingRightSprite: liuKangWalkingRight,
+          walkingLeftSprite: liuKangWalkingLeft,
+          jumpRightSprite: liuKangJumpRight,
           upperPunchSprite: liuKangUpperPunch,
           lowKickSprite: liuKangLowKick,
           kickSequenceSprite: liuKangKickSequence,
@@ -314,84 +259,74 @@
           speed: 4,
           customWidth: 200,
           customHeight: 200,
-          gravity: 1.5
+          gravity: 3.3
         })
       }
 
       function animate() {
+        // Requisição na própria função
+        // Cor de fundo do canvas
+        // Destruição do retângulo
         requestAnimationFrame(animate)
         c.fillStyle = 'darkcyan'
         c.fillRect(0, 0, canvas.width, canvas.height)
-        /* c.fillStyle = "rgba(255, 255, 255, 0.5)"
+        /* 
+        c.fillStyle = "rgba(255, 255, 255, 0.5)"
         c.globalCompositeOperation = "lighter";
-        c.globalAlpha = 0.5 */
+        c.globalAlpha = 0.5 
+        */
 
-        // ANIMAÇÃO
+        // ========== ANIMAÇÃO ==========
         charLiuKang.draw()
         charLiuKang.update()
 
-        // ======================================================= GERENCIAR MOVIMENTOS HORIZONTAIS =======================================================
+        // ========== GERENCIAR MOVIMENTOS HORIZONTAIS ==========
 
-        // IMPEDIR SAÍDA DA TELA ->
-        if (
-          keys.right.pressed &&
-          charLiuKang.x > canvas.width - charLiuKang.customWidth / 2
-        ) {
-          console.log(charLiuKang.x)
-          // a velocidade negativa anula a positiva (congelamento na posição)
-          charLiuKang.x -= charLiuKang.speed
-        }
-
-        // IMPEDIR SAÍDA DA TELA ->
-        if (
-          keys.left.pressed &&
-          charLiuKang.x > 0 + charLiuKang.customWidth
-        ) {
-          console.log(charLiuKang.x)
-          // a velocidade negativa anula a positiva (congelamento na posição)
-          charLiuKang.x += charLiuKang.speed
-        }
-
-        // IR ->
+        // Movimentar para ->
+        // Movimentar para <-
+        // Não movimentar
         if (keys.right.pressed) {
           charLiuKang.x += charLiuKang.speed
         }
-
-        // VOLTAR <-
         if (keys.left.pressed) {
           charLiuKang.x -= charLiuKang.speed
-        }
-
-        // Fazer o jogador andar para <- e impedir jogador de sair da tela ->
-        if (keys.left.pressed) {
-          charLiuKang.x -= charLiuKang.speed
-        }
-
-        // Se nenhum botão estiver pressionado: para o personagem (todos falsos)
-        else {
+        } else {
           charLiuKang.goHorizontal = 0
         }
 
-        // console.log(charLiuKang.x)
-
-        // Fazer o jogador andar para <- e impedir jogador de sair da tela ->
-        /* if (keys.up.pressed) {
-          charLiuKang.goVertical = -charLiuKang.speed
+        ;('IMPEDIR SAÍDA DA TELA ->')
+        // Se o jogador chegou ao canto ->, considerando o tamanho do jogador / 2
+        // Anular a sua movimentação para ->, adicionando velocidade para <-
+        if (charLiuKang.x > canvas.width - charLiuKang.customWidth / 2) {
+          charLiuKang.x -= charLiuKang.speed
         }
 
-        if (
-          charLiuKang.y + charLiuKang.height + charLiuKang.goVertical >=
-          canvas.height
-        ) {
-          charLiuKang.goVertical = 0
-        } */
+        ;('IMPEDIR SAÍDA DA TELA <-')
+        // Se o jogador chegou ao canto esquerdo
+        // Anular a sua movimentação para <-, adicionando velocidade para ->
+        if (charLiuKang.x < 0) {
+          console.log('FIM')
+          charLiuKang.x += charLiuKang.speed
+        }
+
+        ;('COLETAGEM DE INFORMAÇÃO DE MOVIMENTAÇÃO')
+        /* 
+        console.log(
+          `${charLiuKang.x}    ${canvas.width}    ${charLiuKang.customWidth}`
+        ) 
+        */
       }
 
       init()
       animate()
-      ;('APERTAR E SEGURAR')
+      let ground = charLiuKang.y
+
       addEventListener('keypress', event => {
         switch (event.key) {
+          case 'a':
+            keys.left.pressed = true
+            charLiuKang.currentSprite = charLiuKang.walkingLeftSprite
+            break
           case 'd':
             keys.right.pressed = true
             charLiuKang.currentSprite = charLiuKang.walkingRightSprite
@@ -407,9 +342,13 @@
             break
         }
       })
-      ;('APERTAR E SEGURAR')
+
       addEventListener('keydown', event => {
         switch (event.key) {
+          case 'a':
+            keys.left.pressed = true
+            charLiuKang.currentSprite = charLiuKang.walkingLeftSprite
+            break
           case 'd':
             keys.right.pressed = true
             charLiuKang.currentSprite = charLiuKang.walkingRightSprite
@@ -428,9 +367,13 @@
           case 'c':
             charLiuKang.currentSprite = charLiuKang.kickSequenceSprite
             break
+          case 'w':
+            keys.up.pressed = true
+            charLiuKang.y -= 200
+            charLiuKang.currentSprite = charLiuKang.jumpRightSprite
         }
       })
-      ;('APERTAR E SOLTAR')
+
       addEventListener('keyup', event => {
         switch (event.key) {
           case 'a':
@@ -452,8 +395,13 @@
           case 'c':
             charLiuKang.currentSprite = charLiuKang.standRightSprite
             break
+          case 'w':
+            keys.up.pressed = false
+            // charLiuKang.currentSprite = charLiuKang.standRightSprite
         }
       })
+      console.log(`Y parado: ${charLiuKang.y}`)
+      // console.log(charLiuKang.goVertical)
     </script>
   </body>
 </html>
