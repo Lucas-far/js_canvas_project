@@ -5,20 +5,23 @@ const c = canvas.getContext('2d')
 canvas.width = window.innerWidth - 100
 canvas.height = window.innerHeight - 100
 
-let liuKangIdle = new Image()
+let liuKangIdleRight = new Image()
 let liuKangIdleLeft = new Image()
 let liuKangWalkRight = new Image()
 let liuKangWalkLeft = new Image()
+let liuKangJump = new Image()
 
-liuKangIdle.src = './assets/liu_kang_idle.png'
-liuKangIdleLeft.src = './assets/liu_kang_idle_left.png'
-liuKangWalkRight.src = './assets/liu_kang_walking_right.png'
-liuKangWalkLeft.src = './assets/liu_kang_walking_left.png'
+liuKangIdleRight.src = './assets/liu_kang_trans.png'
+liuKangIdleLeft.src = './assets/liu_kang_trans2.png'
+liuKangWalkRight.src = './assets/liu_kang_trans3.png'
+liuKangWalkLeft.src = './assets/liu_kang_trans4.png'
+liuKangJump.src = './assets/liu_kang_trans5.png'
 
 // Monitorar movimentos horizontais do jogador (4)
 const keys = {
   right: { pressed: false },
-  left: { pressed: false }
+  left: { pressed: false },
+  up: { pressed: false }
 }
 
 class Character {
@@ -28,6 +31,7 @@ class Character {
     standLeftSprite,
     walkRightSprite,
     walkLeftSprite,
+    jump,
     x,
     y,
     goHorizontal,
@@ -46,6 +50,7 @@ class Character {
     this.standLeftSprite = standLeftSprite
     this.walkRightSprite = walkRightSprite
     this.walkLeftSprite = walkLeftSprite
+    this.jump = jump
     this.x = x
     this.y = y
     this.goHorizontal = goHorizontal // Ao pressionar um controle, o personagem avança
@@ -128,6 +133,14 @@ class Character {
       this.frameCounter = 0
     }
 
+    // RESETAR O SPRITE: PULANDO
+    if (
+      this.frameCounter > this.frameAmount &&
+      this.currentSprite === this.jump
+    ) {
+      this.frameCounter = 0
+    }
+
     this.x += this.goHorizontal
     this.y += this.goVertical
   }
@@ -138,11 +151,12 @@ let charLiuKang = undefined
 // Instanciação dos objetos (sprites devem ter mesmas dimensões e quantidade de frames)
 function init() {
   charLiuKang = new Character({
-    currentSprite: liuKangIdle,
-    standRightSprite: liuKangIdle,
+    currentSprite: liuKangIdleRight,
+    standRightSprite: liuKangIdleRight,
     standLeftSprite: liuKangIdleLeft,
     walkRightSprite: liuKangWalkRight,
     walkLeftSprite: liuKangWalkLeft,
+    jump: liuKangJump,
     x: 100,
     y: 350,
     goHorizontal: 0,
@@ -150,7 +164,7 @@ function init() {
     srcWidth: 49,
     srcHeight: 105,
     frameCounter: 0,
-    frameAmount: 11,
+    frameAmount: 59,
     speed: 4,
     customWidth: 90,
     customHeight: 200,
@@ -187,32 +201,32 @@ animate()
 
 // =============== Configurar ações ao: apertar/segurar tecla (4) ===============
 addEventListener('keydown', event => {
-  
   switch (event.key) {
     // Se apertar: muda o sprite do personagem para ANDANDO ->
     case 'd':
       keys.right.pressed = true
       charLiuKang.currentSprite = charLiuKang.walkRightSprite
       break
-    
+
     // Se apertar: muda o sprite do personagem para ANDANDO <-
     case 'a':
       keys.left.pressed = true
       charLiuKang.currentSprite = charLiuKang.walkLeftSprite
       break
+    case 'w':
+      charLiuKang.goVertical -= 25
   }
 })
 
 // =============== Configurar ações ao: apertar/segurar tecla (4) ===============
 addEventListener('keyup', event => {
-  
   switch (event.key) {
     // Se soltar: muda o sprite do personagem para PARADO VIRADO ->
     case 'd':
       keys.right.pressed = false
       charLiuKang.currentSprite = charLiuKang.standRightSprite
       break
-    
+
     // Se soltar: muda o sprite do personagem para PARADO VIRADO <-
     case 'a':
       keys.left.pressed = false

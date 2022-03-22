@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vai se foder</title>
+    <style>
+      body {
+        margin: 0;
+        background-color: #222;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas> </canvas>
+
+    <!--<script src="parte_3.js" type="module"></script>-->
+    <script>
+      const canvas = document.querySelector('canvas')
+      const c = canvas.getContext('2d')
+      canvas.width = window.innerWidth - 100
+      canvas.height = window.innerHeight - 100
+      const keys = {
+        right: { pressed: false },
+        left: { pressed: false },
+        up: { pressed: false },
+      }
+
+      class Character {
+        constructor({
+          currentSprite,
+          standRightSprite,
+          standLeftSprite,
+          walkingRightSprite,
+          upperPunchSprite,
+          lowKickSprite,
+          kickSequenceSprite,
+          otherSprites = [],
+          x,
+          y,
+          goHorizontal,
+          goVertical,
+          srcWidth,
+          srcHeight,
+          frameCounter,
+          frameAmount,
+          speed,
+          customWidth,
+          customHeight,
+          gravity
+        }) {
+          this.currentSprite = currentSprite
+          this.standRightSprite = standRightSprite
+          this.standLeftSprite = standLeftSprite
+          this.walkingRightSprite = walkingRightSprite
+          this.upperPunchSprite = upperPunchSprite
+          this.lowKickSprite = lowKickSprite
+          this.kickSequenceSprite = kickSequenceSprite
+          this.otherSprites = otherSprites
+          this.x = x
+          this.y = y
+          this.goHorizontal = goHorizontal // Ao pressionar um controle, o personagem avança
+          this.goVertical = goVertical // Ao pressionar um controle, o personagem salta
+          this.srcWidth = srcWidth
+          this.srcHeight = srcHeight
+          this.frameCounter = frameCounter
+          this.frameAmount = frameAmount
+          this.speed = speed
+          this.customWidth = customWidth
+          this.customHeight = customHeight
+          this.gravity = gravity
+        }
+
+        '========== EXPLICAÇÃO SOBRE A FUNÇÃO: imageDraw() =========='
+        'Do parâmetro 1 ao 5: perspectiva da imagem'
+        'Do parâmetro 6 ao 9: perspectiva do canvas'
+        '1 = referência da imagem no computador ou outra fonte'
+        '2 = recorte: distância da <-'
+        '3 = recorte: distância do topo'
+        '4 = quanto para frente (largura da imagem recortada)'
+        '5 = quanto para baixo (altura da imagem recortada)'
+        '6 = distância da <- do CANVAS'
+        '7 = distância do topo do CANVAS'
+        '8 = largura da imagem dentro do CANVAS'
+        '9 = altura da imagem dentro do CANVAS'
+
+        draw() {
+          c.drawImage(
+            this.currentSprite,
+            this.srcWidth * this.frameCounter,
+            0,
+            this.srcWidth,
+            this.srcHeight,
+            this.x,
+            this.y,
+            this.customWidth,
+            this.customHeight
+          )
+        }
+
+        'Ver arquivos: js_drawImage_1.png -> js_drawImage_2.png -> js_drawImage_3.png (arquivos deste projeto)'
+        drawAlternative() {
+          /*
+          EXEMPLO
+          console.log(c.drawImage(liuKangCombo, 0, 0, 42, 105, 100, 100, 90, 200))
+          console.log(c.drawImage(liuKangCombo, 42, 0, 42, 105, 100, 205, 90, 200))
+          console.log(c.drawImage(liuKangCombo, 84, 0, 50, 105, 100, 310, 90, 200))
+          console.log(c.drawImage(liuKangCombo, 134, 0, 60, 105, 100, 420, 90, 200))
+
+          APLICADO AO CONTEXTO DA FUNÇÃO
+          f = fixo
+          a = alterável
+
+          drawImage(liuKangCombo,                      || f
+                    liuKangComboEachFrameWidthCrop[i], || a
+                    0,                                 || f
+                    liuKangComboEachFrameWidth[i],     || a
+                    105,                               || f
+                    100,                               || f
+                    100,                               || f
+                    90,                                || f
+                    200)                               || f
+          */
+
+          // .slice(fixedIndex, i).reduce((partialSum, a) => partialSum + a, 0)
+          for (let i = 0; i < this.xCrops.length; i++) {
+            c.drawImage(
+              this.currentSprite,
+              this.xCrops[i],
+              0,
+              this.eachWidth[i],
+              this.srcHeight,
+              this.x,
+              this.y,
+              this.customWidth,
+              this.customHeight
+            )
+            console.log(
+              `drawImage(${this.xCrops[i]}, 0, ${this.eachWidth[i]}, ${this.srcHeight}, ${this.x}, ${this.y}, ${this.customWidth}, ${this.customHeight})`
+            )
+          }
+        }
+
+        update() {
+          // PERCORRER CORTES DO SPRITE
+          this.frameCounter++
+
+          // Impedir jogador de sumir da tela (para baixo)
+          if (this.y + this.customHeight + this.goVertical <= canvas.height)
+            this.y += this.gravity
+
+          // RESETAR O SPRITE: PARADO ->
+          if (
+            this.frameCounter > this.frameAmount &&
+            this.currentSprite === this.standRightSprite
+          ) {
+            this.frameCounter = 0
+          }
+
+          // RESETAR O SPRITE: PARADO <-
+          if (
+            this.frameCounter > this.frameAmount &&
+            this.currentSprite === this.standLeftSprite
+          ) {
+            this.frameCounter = 0
+          }
+
+          // RESETAR O SPRITE: ANDANDO ->
+          if (
+            this.frameCounter > this.frameAmount &&
+            this.currentSprite === this.walkingRightSprite
+          ) {
+            this.frameCounter = 0
+          }
+
+          // RESETAR O SPRITE: ANDANDO <-
+          if (
+            this.frameCounter > this.frameAmount &&
+            this.currentSprite === this.standLeftSprite
+          ) {
+            this.frameCounter = 0
+          }
+
+          // RESETAR O SPRITE: GANCHO
+          if (
+            this.frameCounter > this.frameAmount &&
+            this.currentSprite === this.upperPunchSprite
+          ) {
+            this.frameCounter = 0
+          }
+
+          // RESETAR O SPRITE: CHUTE BAIXO
+          if (
+            this.frameCounter > this.frameAmount &&
+            this.currentSprite === this.lowKickSprite
+          ) {
+            this.frameCounter = 0
+          }
+
+          // RESETAR O SPRITE: SEQUÊNCIA DE CHUTE
+          if (
+            this.frameCounter > this.frameAmount &&
+            this.currentSprite === this.kickSequenceSprite
+          ) {
+            this.frameCounter = 0
+          }
+
+          /* this.x += this.goHorizontal
+          this.y += this.goVertical */
+
+          // RESETAR O SPRITE: PARADO <-
+          /* if (
+            this.frameCounter > this.frameAmount &&
+            this.currentSprite === this.standLeftSprite
+          ) {
+            this.frameCounter = 0
+          } */
+
+          // RESETAR O SPRITE: CAMINHANDO ->
+          /* if (
+            this.frameCounter > this.frameAmount &&
+            this.currentSprite === this.walkRightSprite
+          ) {
+            this.frameCounter = 0
+          } */
+
+          // RESETAR O SPRITE: CAMINHANDO <-
+          /* if (
+            this.frameCounter > this.frameAmount &&
+            this.currentSprite === this.walkLeftSprite
+          ) {
+            this.frameCounter = 0
+          } */
+
+          // RESETAR O SPRITE: PULANDO
+          /* if (
+            this.frameCounter > this.frameAmount &&
+            this.currentSprite === this.jump
+          ) {
+            this.frameCounter = 0
+          } */
+
+          // RESETAR O SPRITE: PULANDO
+          /* if (
+            this.frameCounter > this.frameAmount &&
+            this.currentSprite === this.kick
+          ) {
+            this.frameCounter = 0
+          }
+
+          this.x += this.goHorizontal
+          this.y += this.goVertical */
+
+          // ÚLTIMO ADICIONADO
+          /* if (this.y + this.height + this.goVertical <= canvas.height) {
+            this.goVertical += this.gravity
+          } else {
+            this.goVertical = 0
+          } */
+        }
+      }
+
+      // PERSONAGEM
+      let charLiuKang = undefined
+
+      // PARADO ->
+      let liuKangIdleRight = new Image()
+      liuKangIdleRight.src = './assets/liu_kang_idle_right.png'
+
+      // PARADO <-
+      let liuKangIdleLeft = new Image()
+      liuKangIdleLeft.src = './assets/liu_kang_idle_left.png'
+
+      // ANDANDO PARA A DIREITA
+      let liuKangWalkingRight = new Image()
+      liuKangWalkingRight.src = './assets/liu_kang_walking_right.png'
+
+      // GANCHO
+      let liuKangUpperPunch = new Image()
+      liuKangUpperPunch.src = './assets/liu_kang_upper_punch.png'
+
+      // CHUTE BAIXO
+      let liuKangLowKick = new Image()
+      liuKangLowKick.src = './assets/liu_kang_low_kick.png'
+
+      // SEQUÊNCIA DE PERNA
+      let liuKangKickSequence = new Image()
+      liuKangKickSequence.src = './assets/liu_kang_kick_sequence.png'
+
+      function init() {
+        // PERSONAGEM
+        charLiuKang = new Character({
+          currentSprite: liuKangIdleRight,
+          standRightSprite: liuKangIdleRight,
+          standLeftSprite: liuKangIdleLeft,
+          walkingRightSprite: liuKangWalkingRight,
+          upperPunchSprite: liuKangUpperPunch,
+          lowKickSprite: liuKangLowKick,
+          kickSequenceSprite: liuKangKickSequence,
+          otherSprites: [liuKangUpperPunch],
+          x: 350,
+          y: 350,
+          goHorizontal: 0,
+          goVertical: 0,
+          srcWidth: 100,
+          srcHeight: 124,
+          frameCounter: 0,
+          frameAmount: 59,
+          speed: 4,
+          customWidth: 200,
+          customHeight: 200,
+          gravity: 1.5
+        })
+      }
+
+      function animate() {
+        requestAnimationFrame(animate)
+        c.fillStyle = 'darkcyan'
+        c.fillRect(0, 0, canvas.width, canvas.height)
+        /* c.fillStyle = "rgba(255, 255, 255, 0.5)"
+        c.globalCompositeOperation = "lighter";
+        c.globalAlpha = 0.5 */
+
+        // ANIMAÇÃO
+        charLiuKang.draw()
+        charLiuKang.update()
+
+        // ======================================================= GERENCIAR MOVIMENTOS HORIZONTAIS =======================================================
+
+        // IMPEDIR SAÍDA DA TELA ->
+        if (
+          keys.right.pressed &&
+          charLiuKang.x > canvas.width - charLiuKang.customWidth / 2
+        ) {
+          console.log(charLiuKang.x)
+          // a velocidade negativa anula a positiva (congelamento na posição)
+          charLiuKang.x -= charLiuKang.speed
+        }
+
+        // IMPEDIR SAÍDA DA TELA ->
+        if (
+          keys.left.pressed &&
+          charLiuKang.x > 0 + charLiuKang.customWidth
+        ) {
+          console.log(charLiuKang.x)
+          // a velocidade negativa anula a positiva (congelamento na posição)
+          charLiuKang.x += charLiuKang.speed
+        }
+
+        // IR ->
+        if (keys.right.pressed) {
+          charLiuKang.x += charLiuKang.speed
+        }
+
+        // VOLTAR <-
+        if (keys.left.pressed) {
+          charLiuKang.x -= charLiuKang.speed
+        }
+
+        // Fazer o jogador andar para <- e impedir jogador de sair da tela ->
+        if (keys.left.pressed) {
+          charLiuKang.x -= charLiuKang.speed
+        }
+
+        // Se nenhum botão estiver pressionado: para o personagem (todos falsos)
+        else {
+          charLiuKang.goHorizontal = 0
+        }
+
+        // console.log(charLiuKang.x)
+
+        // Fazer o jogador andar para <- e impedir jogador de sair da tela ->
+        /* if (keys.up.pressed) {
+          charLiuKang.goVertical = -charLiuKang.speed
+        }
+
+        if (
+          charLiuKang.y + charLiuKang.height + charLiuKang.goVertical >=
+          canvas.height
+        ) {
+          charLiuKang.goVertical = 0
+        } */
+      }
+
+      init()
+      animate()
+      ;('APERTAR E SEGURAR')
+      addEventListener('keypress', event => {
+        switch (event.key) {
+          case 'd':
+            keys.right.pressed = true
+            charLiuKang.currentSprite = charLiuKang.walkingRightSprite
+            break
+          case 'x':
+            charLiuKang.currentSprite = charLiuKang.upperPunchSprite
+            break
+          case 'z':
+            charLiuKang.currentSprite = charLiuKang.lowKickSprite
+            break
+          case 'c':
+            charLiuKang.currentSprite = charLiuKang.kickSequenceSprite
+            break
+        }
+      })
+      ;('APERTAR E SEGURAR')
+      addEventListener('keydown', event => {
+        switch (event.key) {
+          case 'd':
+            keys.right.pressed = true
+            charLiuKang.currentSprite = charLiuKang.walkingRightSprite
+            break
+          case 'a':
+            keys.left.pressed = true
+            charLiuKang.currentSprite = charLiuKang.standLeftSprite
+            break
+          case 'x':
+            charLiuKang.currentSprite = charLiuKang.standRightSprite
+            // keys.x.pressed = false
+            break
+          case 'z':
+            charLiuKang.currentSprite = charLiuKang.standRightSprite
+            break
+          case 'c':
+            charLiuKang.currentSprite = charLiuKang.kickSequenceSprite
+            break
+        }
+      })
+      ;('APERTAR E SOLTAR')
+      addEventListener('keyup', event => {
+        switch (event.key) {
+          case 'a':
+            keys.left.pressed = false
+            charLiuKang.currentSprite = charLiuKang.standLeftSprite
+            break
+          case 'd':
+            keys.right.pressed = false
+            charLiuKang.currentSprite = charLiuKang.standRightSprite
+            break
+          case 'x':
+            // charLiuKang.currentSprite = charLiuKang.upperPunchSprite
+            // keys.x.pressed = false
+            charLiuKang.currentSprite = charLiuKang.standRightSprite
+            break
+          case 'z':
+            charLiuKang.currentSprite = charLiuKang.standRightSprite
+            break
+          case 'c':
+            charLiuKang.currentSprite = charLiuKang.standRightSprite
+            break
+        }
+      })
+    </script>
+  </body>
+</html>

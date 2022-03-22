@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sem título</title>
+    <style>
+      body {
+        margin: 0;
+        background-color: violet;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+      }
+
+      canvas {
+        border: black solid 2px;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas> </canvas>
+    <script>
+      const canvas = document.querySelector('canvas')
+      const c = canvas.getContext('2d')
+
+      canvas.width = innerWidth - 50
+      canvas.height = innerHeight - 50
+
+      class Player {
+        constructor() {
+          this.position = {
+            x: 0,
+            y: 0
+          }
+          this.velocity = {
+            x: 0,
+            y: 1
+          }
+          this.height = 30
+          this.width = 30
+        }
+
+        draw() {
+          c.fillStyle = 'rgba(255,0,64)'
+          c.fillRect(this.position.x, this.position.y, this.width, this.height)
+        }
+
+        update() {
+          // PROBLEMA1: Retângulo distorcido
+          // PROBLEMA2: Sai da tela ao atingi o fundo
+          this.draw()
+          this.position.y += this.velocity.y
+        }
+      }
+
+      let player = new Player()
+
+      function animate() {
+        requestAnimationFrame(animate)
+        // Correção: PROBLEMA1
+        c.clearRect(0, 0, canvas.width, canvas.height)
+        player.update()
+      }
+
+      animate()
+    </script>
+  </body>
+</html>

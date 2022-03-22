@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sem título</title>
+    <style>
+      body {
+        margin: 0;
+        background-color: violet;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+      }
+
+      canvas {
+        border: black solid 2px;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas> </canvas>
+    <script>
+      const canvas = document.querySelector('canvas')
+      const c = canvas.getContext('2d')
+
+      canvas.width = innerWidth - 50
+      canvas.height = innerHeight - 50
+
+      function randomIndex(targetVar) {
+        const index = Math.floor(Math.random() * targetVar.length)
+
+        return index
+      }
+
+      function rgbTable() {
+        let arrayVar = []
+
+        for (let i = 0; i < 255; i++) {
+          arrayVar.push(i)
+        }
+
+        let indexForRed = randomIndex(arrayVar)
+        let indexForGreen = randomIndex(arrayVar)
+        let indexForBlue = randomIndex(arrayVar)
+
+        return `rgba(${arrayVar[indexForRed]},${arrayVar[indexForGreen]},${arrayVar[indexForBlue]})`
+      }
+
+      function rectDo(x, y, vx, vy, h, w, horizontal, vertical) {
+        c.fillStyle = rgbTable()
+        c.fillRect(x, y, w, h)
+
+        if (horizontal) {
+          x += vx
+        } else if (vertical) {
+          y += vy
+        }
+      }
+
+      function animate() {
+        requestAnimationFrame(animate)
+        // for (let i = 0; i < 300; i += 5) {}
+        rectDo(
+          (x = 2),
+          (y = 0),
+          (vx = 0),
+          (vy = 1),
+          (h = 2),
+          (w = 2),
+          (horizontal = false),
+          (vertical = true)
+        )
+      }
+
+      animate()
+    </script>
+  </body>
+</html>
