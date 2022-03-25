@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Padrão</title>
+    <style>
+      body {
+        background-color: #222;
+      }
+      #canvas1 {
+        border: deeppink solid 5px;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="canvas1"></canvas>
+    <script>
+      addEventListener('keydown', event => {
+        switch (event.key) {
+          case 'a':
+            characters[0].currentSprite = characters[0].idleLeft
+            break
+          case 'd':
+            characters[0].currentSprite = characters[0].idleRight
+            break
+          case 'z':
+            characters[0].currentSprite = characters[0].highKickSequenceRight
+            break
+        }
+      })
+
+      addEventListener('keyup', event => {
+        switch (event.key) {
+          case 'a':
+            characters[0].currentSprite = characters[0].idleLeft
+            break
+          case 'd':
+            characters[0].currentSprite = characters[0].idleRight
+            break
+          case 'z':
+            characters[0].currentSprite = characters[0].idleRight
+            break
+        }
+      })
+
+      const canvas = document.getElementById('canvas1')
+      const ctx = canvas.getContext('2d')
+      const canvasWidth = (canvas.width = 600)
+      const canvasHeight = (canvas.height = 600)
+
+      let liuKangDtb = {
+        srcWidth: 100,
+        srcHeight: 124,
+        canvasWidth: 100,
+        canvasHeight: 124
+      }
+
+      class Character {
+        constructor({
+          currentSprite,
+          idleRight,
+          idleLeft,
+          highKickSequenceRight,
+          whereX,
+          whereY,
+          frameAmount,
+          gameFrame,
+          delay
+        }) {
+          this.currentSprite = currentSprite
+          this.idleRight = idleRight
+          this.idleLeft = idleLeft
+          this.highKickSequenceRight = highKickSequenceRight
+          this.whereX = whereX
+          this.whereY = whereY
+          this.frameAmount = frameAmount
+          this.gameFrame = gameFrame
+          this.delay = delay
+          this.srcWidth = 100
+          this.srcHeight = 124
+          this.canvasWidth = 100
+          this.canvasHeight = 124
+          this.frameCounter = 0
+          this.heightFixed = 0
+        }
+
+        '========== EXPLICAÇÃO SOBRE A FUNÇÃO: drawImage() =========='
+        'Do parâmetro 1 ao 5: perspectiva da imagem'
+        'Do parâmetro 6 ao 9: perspectiva do canvas'
+        '1 = referência da imagem no computador ou outra fonte'
+        '2 = recorte: distância da <-'
+        '3 = recorte: distância do topo'
+        '4 = quanto para frente (largura da imagem recortada)'
+        '5 = quanto para baixo (altura da imagem recortada)'
+        '6 = distância da <- do CANVAS'
+        '7 = distância do topo do CANVAS'
+        '8 = largura da imagem dentro do CANVAS'
+        '9 = altura da imagem dentro do CANVAS'
+
+        draw() {
+          ctx.drawImage(
+            this.currentSprite,
+            this.srcWidth * this.globalFrame,
+            this.heightFixed,
+            this.srcWidth,
+            this.srcHeight,
+            this.whereX,
+            this.whereY,
+            this.canvasWidth,
+            this.canvasHeight
+          )
+        }
+
+        update() {
+          /* // Impedir jogador de sumir da tela (para baixo)
+          if (this.y + this.customHeight + this.goVertical <= canvas.height)
+            this.y += this.gravity */
+
+          this.gameFrame++
+
+          if (this.gameFrame % this.delay == 0) {
+            if (this.globalFrame < this.frameAmount) {
+              this.globalFrame++
+            } else {
+              this.globalFrame = 0
+            }
+          }
+        }
+      }
+
+      let liuKangIdle = new Image()
+      liuKangIdle.src = '../assets/liu_kang_dtb/_idle_right.png'
+      let liuKangIdleLeft = new Image()
+      liuKangIdleLeft.src = '../assets/liu_kang_dtb/_idle_left.png'
+      let liuKangHighKickSequenceRight = new Image()
+      liuKangHighKickSequenceRight.src =
+        '../assets/liu_kang_dtb/_high_kick_sequence3.png'
+
+      let characters = []
+
+      function init() {
+        characters.push(
+          new Character({
+            currentSprite: liuKangIdle,
+            idleRight: liuKangIdle,
+            idleLeft: liuKangIdleLeft,
+            highKickSequenceRight: liuKangHighKickSequenceRight,
+            whereX: 100,
+            whereY: 400,
+            frameAmount: 11,
+            gameFrame: 0,
+            delay: 5
+          })
+        )
+      }
+
+      function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height)
+
+        characters.forEach(character => {
+          character.draw()
+          character.update()
+        })
+
+        requestAnimationFrame(animate)
+      }
+      init()
+      animate()
+    </script>
+  </body>
+</html>
