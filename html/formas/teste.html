@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Padrão</title>
+    <style>
+      body {
+        background-color: #222;
+      }
+      #canvas1 {
+        border: deeppink solid 5px;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="canvas1"></canvas>
+    <script>
+      const canvas = document.getElementById('canvas1')
+      const ctx = canvas.getContext('2d')
+      const canvasWidth = (canvas.width = 600)
+      const canvasHeight = (canvas.height = 600)
+
+      let dimensions = [
+        7, 10, 13, 16, 19, 22, 25, 28, 31, 34, 37, 40, 43, 46, 49, 52
+      ]
+
+      function randomIndex(targetVar) {
+        const index = Math.floor(Math.random() * targetVar.length)
+        return index
+      }
+
+      class Standard {
+        constructor() {}
+
+        draw() {}
+
+        update() {}
+      }
+
+      let height = dimensions[randomIndex(dimensions)]
+      let width = dimensions[randomIndex(dimensions)]
+
+      let x = 411
+      let xStart = 0
+      let xf = 4
+      let xb = 4
+
+      // Cima = - // Baixo = +
+      let y = 290
+      let yStart = 0
+      let yDown = 4
+      let yUp = 4
+
+      function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height)
+
+        ctx.beginPath()
+        ctx.lineWidth = 3
+        ctx.fillStyle = 'black'
+        ctx.strokeStyle = 'red'
+        ctx.fillRect(x, y, width, height)
+        ctx.stroke()
+
+        console.log(x)
+        if (x + width > canvas.width) {
+          xf = -xf
+        }
+        if (x < xStart) {
+          xf = +xb
+        }
+
+        if (y + height > canvas.height) {
+          yDown = -yDown
+        }
+
+        if (y < yStart) {
+          yDown = +yUp
+        }
+
+        x += xf
+        y += yDown
+
+        requestAnimationFrame(animate)
+      }
+
+      animate()
+    </script>
+  </body>
+</html>

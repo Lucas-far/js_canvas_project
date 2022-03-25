@@ -45,9 +45,9 @@
         return `rgba(${arrayVar[indexForRed]},${arrayVar[indexForGreen]},${arrayVar[indexForBlue]})`
       }
 
-      // Se largura: shapeDimension = this.width (impedir criar retângulo cortado na horizontal do canvas)
-      // Se altura: shapeDimension = this.height (impedir criar retângulo cortado na vertical do canvas)
-      function coordinate({ measure, shapeDimension = 0 }) {
+      // Parâmetro "shapeDimension" inserido para evitar que a forma apareça grudada na tela
+      // Portanto: A forma só surgirá em coordenadas "X" e "Y" a partir de sua "altura" e "largura" (nunca a partir de 0)
+      function coordinate({ measure, shapeDimension }) {
         let canvasWidth = []
         let canvasHeight = []
 
@@ -55,54 +55,85 @@
           for (let i = shapeDimension; i < canvas.width - shapeDimension; i++) {
             canvasWidth.push(i)
           }
+          // console.log('1', canvasWidth)
           return canvasWidth[randomIndex(canvasWidth)]
         } else if (measure == 'height') {
-          for (
-            let i2 = shapeDimension;
-            i2 < canvas.height - shapeDimension;
-            i2++
-          ) {
+          for (let i2 = shapeDimension; i2 < canvas.height - shapeDimension; i2++) {
             canvasHeight.push(i2)
           }
+          // console.log('2', canvasHeight)
           return canvasHeight[randomIndex(canvasHeight)]
         }
       }
 
+      // MOVIMENTAÇÃO (adição desta função)
+      function speedRate() {
+        let values = [Math.random(), 1, 2, 3, 4, 5]
+
+        for (let i = 0.1; i < 0.99; i += 0.1) {
+          values.push(i)
+        }
+
+        let indexChosen = randomIndex(values)
+
+        return values[indexChosen]
+      }
+
       class Rectangle {
-        constructor() {
-          this.x = coordinate({ measure: 'width', shapeDimension: this.width })
-          this.y = coordinate({
-            measure: 'height',
-            shapeDimension: this.height
-          })
-
-          this.rgb = rgbTable()
-
+        constructor({goingHorizontal, goingVertical}) {
           this.dimensions = [
             7, 10, 13, 16, 19, 22, 25, 28, 31, 34, 37, 40, 43, 46, 49, 52
           ]
-
+          this.startX = 0
+          this.startY = 0
           this.height = this.dimensions[randomIndex(this.dimensions)]
           this.width = this.dimensions[randomIndex(this.dimensions)]
+          this.x = coordinate({ measure: 'width' , shapeDimension: this.width})
+          this.y = coordinate({ measure: 'height' , shapeDimension: this.height})
+          this.goingHorizontal = goingHorizontal
+          this.goingVertical = goingVertical
+          this.goingBackHorizontal = this.goingHorizontal
+          this.goingBackVertical = this.goingVertical
+          
         }
 
         draw() {
           ctx.beginPath()
-          ctx.lineWidth = 3
-          ctx.fillStyle = this.rgb
-          ctx.strokeStyle = this.rgb
+          // ctx.lineWidth = 10
+          // ctx.strokeStyle = rgbTable()
+          ctx.fillStyle = rgbTable()
           ctx.fillRect(this.x, this.y, this.width, this.height)
           ctx.stroke()
+          ctx.fill()
         }
 
-        update() {}
+        update() {
+          if (this.x + this.width > canvas.width) {
+            this.goingHorizontal = -this.goingHorizontal
+          }
+          if (this.x < this.startX) {
+            this.goingHorizontal = +this.goingBackHorizontal
+          }
+
+          if (this.y + this.height > canvas.height) {
+            this.goingVertical = -this.goingVertical
+          }
+
+          if (this.y < this.startY) {
+            this.goingVertical = +this.goingBackVertical
+          }
+
+          this.x += this.goingHorizontal
+          this.y += this.goingVertical
+        }
       }
 
       let rectangles = []
 
       // Dentro da função "animate" cria uma efeito completamente diferente
-      for (let i = 0; i < 50; i++) {
-        rectangles.push(new Rectangle())
+      for (let i = 0; i < 100; i++) {
+        let newRect = new Rectangle({goingHorizontal: speedRate(), goingVertical: speedRate()})
+        rectangles.push(newRect)
       }
 
       function animate() {
@@ -110,6 +141,7 @@
 
         rectangles.forEach(rectangle => {
           rectangle.draw()
+          rectangle.update()
         })
 
         requestAnimationFrame(animate)

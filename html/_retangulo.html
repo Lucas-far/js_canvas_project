@@ -14,11 +14,62 @@
         justify-content: center;
         height: 100vh;
       }
+
+      .div1 {
+        border: deeppink solid 5px;
+        position: fixed;
+        top: 0%;
+        left: 49%;
+        height: 5%;
+        width: 50%;
+      }
+
+      .sec1 {
+        border: violet solid 5px;
+        position: relative;
+      }
+
+      .menu,
+      .menu2,
+      .menu3,
+      .menu4 {
+        position: absolute;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        border: white solid 1px;
+      }
+
+      .menu {
+        left: 20%;
+      }
+
+      .menu2 {
+        left: 40%;
+      }
+
+      .menu3 {
+        left: 60%;
+      }
+
+      .menu4 {
+        left: 80%;
+      }
     </style>
   </head>
   <body>
-    <canvas> </canvas>
+    <main>
+      <div class="div1">
+        <span class="menu">Home</span>
+        <span class="menu2">Home</span>
+        <span class="menu3">Home</span>
+        <span class="menu4">Home</span>
+      </div>
 
-    <script src="_retangulo.js" type="module"></script>
+      <section class="sec1">
+        <p>Parágrafo 1</p>
+      </section>
+
+      <p>Parágrafo 2</p>
+    </main>
   </body>
 </html>

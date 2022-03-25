@@ -67,9 +67,24 @@
         }
       }
 
+      // MOVIMENTAÇÃO (adição desta função)
+      function speedRate() {
+        let values = [Math.random()]
+
+        for (let i = 0.1; i < 0.99; i += 0.1) {
+          values.push(i)
+        }
+
+        let indexChosen = randomIndex(values)
+
+        return values[indexChosen]
+      }
+
       class Circle {
-        constructor() {
-          this.rgb = rgbTable()
+        // MOVIMENTAÇÃO (adição dos parâmetros e definição deles logo abaixo) (não fazem parte da função de criar o círculo)
+        constructor({ forward, backwards }) {
+          this.forward = forward
+          this.backwards = backwards
 
           this.dimensions = [
             7, 10, 13, 16, 19, 22, 25, 28, 31, 34, 37, 40, 43, 46, 49, 52
@@ -90,26 +105,59 @@
 
         draw() {
           ctx.beginPath()
-          // ctx.lineWidth = 10
-          ctx.fillStyle = this.rgb
-          ctx.strokeStyle = this.rgb
-          // 3 últimos parâmetros recomenda-se serem fixos
-          ctx.arc(this.x, this.y, this.sphereRadius, 0, Math.PI * 2, false)
-          ctx.stroke()
+          ctx.lineWidth = 10 // espessura
+          // ctx.strokeStyle = rgbTable() // cor da espessura
+          ctx.fillStyle = rgbTable() // preenchimento
+          ctx.arc(this.x, this.y, this.sphereRadius, 0, Math.PI * 2, false) // 3 últimos parâmetros recomenda-se serem fixos
+          ctx.stroke() // habilitar espessura
+          ctx.fill() // habilitar preenchimento
         }
 
-        update() {}
+        // MOVIMENTAÇÃO (comentar para manter estático)
+        update() {
+          if (
+            this.x + this.sphereRadius >= canvas.width ||
+            this.x < this.sphereRadius
+          ) {
+            this.forward = -this.forward
+          }
+
+          if (
+            this.y + this.sphereRadius >= canvas.height ||
+            this.y < this.sphereRadius
+          ) {
+            this.backwards = -this.backwards
+          }
+
+          this.x += this.forward
+          this.y += this.backwards
+        }
       }
 
       let circles = []
 
       // Dentro da função "animate" cria uma efeito completamente diferente
       for (let i = 0; i < 50; i++) {
+        // ESTÁTICO
+        /* 
         let newCircle = new Circle()
+        circles.push(newCircle) 
+        */
+
+        // MOVIMENTAÇÃO
+        let newCircle = new Circle({
+          forward: speedRate(),
+          backwards: speedRate()
+        })
+        circles.push(newCircle)
+        console.log(newCircle.rgb)
+
+        // CONSULTA
+        /*
         console.log(
           `${canvas.width} -> ${newCircle.x}    ${canvas.height} -> ${newCircle.y}  ||  ${newCircle.sphereRadius}`
         )
-        circles.push(newCircle)
+        */
       }
 
       function animate() {
@@ -117,6 +165,7 @@
 
         circles.forEach(circle => {
           circle.draw()
+          circle.update()
         })
 
         requestAnimationFrame(animate)
