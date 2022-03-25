@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Lobo</title>
+    <style>
+      #canvas1 {
+        border: black solid 5px;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 600px;
+        height: 600px;
+      }
+      .controls {
+        position: absolute;
+        z-index: 10;
+        top: 50px;
+        left: 50%;
+        transform: translateX(-50%);
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="canvas1"></canvas>
+    <div class="controls">
+      <label for="animations">Choose animation</label>
+      <select name="animations" id="animations">
+        <option value="idle">idle</option>
+        <option value="jump">jump</option>
+        <option value="fall">fall</option>
+        <option value="run">run</option>
+        <option value="dizzy">dizzy</option>
+        <option value="sit">sit</option>
+        <option value="roll">roll</option>
+        <option value="bite">bite</option>
+        <option value="ko">ko</option>
+        <option value="gethit">gethit</option>
+      </select>
+    </div>
+    <script>
+      let playerStatus = undefined
+
+      const dropdown = document.getElementById('animations')
+      dropdown.addEventListener('change', option => {
+        // html -> tag select -> tag option -> propriedade "value" -> valor
+        // esta var retorna um dos índices em: status (criado abaixo)
+        playerStatus = option.target.value
+
+        // Percorre todos os índices em: status
+        // A var "status" se conecta com a var "frameY"
+        // Define o frameY de acordo com o estado encontrado
+        for (let i = 0; i < status.length; i++) {
+          if (playerStatus === status[i]) {
+            frameY = i
+          }
+        }
+      })
+
+      const canvas = document.getElementById('canvas1')
+      const ctx = canvas.getContext('2d')
+      const canvasWidth = (canvas.width = 600)
+      const canvasHeight = (canvas.height = 600)
+      
+      // Instanciar um objeto de imagem
+      const playerImage = new Image()
+
+      // Referenciar um objeto de imagem
+      playerImage.src = '../assets/shadow_dog.png'
+
+      // Coletagem da largura da imagem referenciada, dividida por sua quantidade de linhas (12) horizontal
+      const spriteWidth = playerImage.width / 12 + 2 
+
+      // Coletagem da altura da imagem referenciada, dividida por sua quantidade de colunas (10) vertical
+      const spriteHeight = playerImage.height / 10 // número de colunas (10)
+      let frameX = 0
+      let frameY = 0
+      let xCrops = [6, 6, 6, 8, 10, 4, 6, 6, 11, 3] // número de linhas de cada coluna do sprite
+
+      let status = [
+        'idle',
+        'jump',
+        'fall',
+        'run',
+        'dizzy',
+        'sit',
+        'roll',
+        'bite',
+        'ko',
+        'gethit'
+      ]
+      let gameFrame = 0
+      const staggerFrames = 5
+
+      function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height)
+        // Imagem desenhada no topo esquerdo
+        // Inserida para caber toda dentro do canvas
+        ctx.drawImage(
+          playerImage,
+          frameX * spriteWidth,
+          frameY * spriteHeight,
+          spriteWidth,
+          spriteHeight,
+          0,
+          0,
+          spriteWidth,
+          spriteHeight
+        )
+
+        // RESETAR FRAME (1 a menos que a quantidade original no sprite)
+        /* if (frameX < 6) {
+          frameX++
+        } else {
+          frameX = 0
+        } */
+        if (gameFrame % staggerFrames == 0) {
+          for (let i = 0; i < 10; i++)
+            if (frameY === i) {
+              if (frameX < xCrops[i]) {
+                playerStatus = status[i]
+                console.log(playerStatus)
+                frameX++
+              } else {
+                frameX = 0
+              }
+            }
+        }
+        gameFrame++
+
+        requestAnimationFrame(animate)
+      }
+
+      animate()
+    </script>
+  </body>
+</html>

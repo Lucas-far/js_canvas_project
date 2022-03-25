@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Lobo</title>
+    <style>
+      body {
+        background-color: #222;
+      }
+
+      #container {
+        border: cyan solid 5px;
+        position: absolute;
+        width: 810px;
+        transform: translate(-50%, -50%);
+        top: 50%;
+        left: 50%;
+      }
+
+      #canvas1 {
+        border: deeppink solid 5px;
+        position: relative;
+        width: 800px;
+        height: 700px;
+      }
+
+      #slider {
+        width: 90%;
+        margin: 1rem;
+      }
+
+      p {
+        color: violet;
+        margin: 1rem;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="container">
+      <canvas id="canvas1"></canvas>
+      <p>Game speed:<span id="showGameSpeed"></span></p>
+      <input
+        type="range"
+        min="0"
+        max="20"
+        value="5"
+        class="slider"
+        id="slider"
+      />
+    </div>
+
+    <script>
+      const canvas = document.getElementById('canvas1')
+      const ctx = canvas.getContext('2d')
+      const canvasWidth = (canvas.width = 800)
+      const canvasHeight = (canvas.height = 700)
+      const backgroundLayer1 = new Image()
+      const backgroundLayer2 = new Image()
+      const backgroundLayer3 = new Image()
+      const backgroundLayer4 = new Image()
+      const backgroundLayer5 = new Image()
+      backgroundLayer1.src = '../assets/layer-1.png'
+      backgroundLayer2.src = '../assets/layer-2.png'
+      backgroundLayer3.src = '../assets/layer-3.png'
+      backgroundLayer4.src = '../assets/layer-4.png'
+      backgroundLayer5.src = '../assets/layer-5.png'
+
+      let gameSpeed = 10
+
+      // <input id="slider" value="5">    Mudar o valor no input
+      let slider = document.getElementById('slider')
+      slider.value = gameSpeed
+
+      // <span id="showGameSpeed"></span>    A tag recebe o valor de "let gameSpeed"
+      let showGameSpeed = document.getElementById('showGameSpeed')
+      showGameSpeed.innerHTML = gameSpeed
+
+      addEventListener('load', action => {
+        // Atualizar os valores acima em tempo real
+        slider.addEventListener('change', event => {
+          // Guarda o valor atual no input quando ele for modificado
+          // Reatribuir o valor guardado para atualizar o valor no html
+          gameSpeed = event.target.value
+          showGameSpeed.innerHTML = gameSpeed
+        })
+
+        class Layer {
+          constructor(image, speedModifier) {
+            // Não precisam ser definidos
+            this.width = 2400
+            this.height = 700
+            this.x = 0
+            this.y = 0
+            // Precisam ser definidos
+            this.image = image
+            this.speedModifier = speedModifier
+            // Não precisam ser definidos, mas são dependentes
+            this.speed = gameSpeed * this.speedModifier
+          }
+
+          update() {
+            // Variável para cenários com movimentos dinâmicos em velocidades diferentes
+            // Variável que ajuda a alterar o valor de "this.x"
+            this.speed = gameSpeed * this.speedModifier
+
+            // [ this.x ] O cenário irá se mover para a ->, baseado em na lógica abaixo
+            // [ this.x ] Inicialmente é 0, mas vai DECRESCENDO devido a sua reatribuição abaixo (Math.floor())
+            // [ this.x ] A cada vez que a condição não for satisfeita, vai diminuindo (indo ->)
+            // [ this.x ] A condição abaixo só é satisfeita (true) quando alcançar -2401
+            // [ this.x ] Se a condição for satisfeita, volta ao valor "0" (Início da imagem)
+            if (this.x <= -this.width) {
+              this.x = 0
+            }
+
+            // [ this.x  ] é DECREMENTADO aqui
+            // [ this.x  ] está usando Math.floor(par, par2), onde "par2" é resultado de um cálculo que precisa de um parâmetro
+            //             O "par2" é "speedModifier" (vamos supor ser 0.5)
+            // [ CÁLCULO ] Math.floor(0 - [gameSpeed * 0.5]) -> Math.floor(0 - [10 * 0.5]) -> Math.floor(0 - 5) -> Math.floor(-5) -> -5
+            // [ this.x  ] Portanto, "this.x = -5", o cenário, teoricamente move -5px para ->
+            this.x = Math.floor(this.x - this.speed)
+          }
+
+          // A mesma imagem é criada e recriada
+          // [ this.x ] Na primeira criação, ela está posicionada de forma padrão
+          // [ this.x ] Na primeira criação, sai do 0 até - 2400 (de uma ponta da imagem para a outra)
+          // [ this.x ] Ao chegar ao fim (-2400), retorna ao (0), mas isso não retorna ao início, apenas faz o cenário parar
+          // [ this.x ] Para voltar ao início, é preciso voltar a quantidade que foi percorrida
+          // [ this.x ] Se foi percorrido (-2400) é preciso voltar (2400), para chegar ao (0)
+          draw() {
+            ctx.drawImage(this.image, this.x, this.y, this.width, this.height)
+            // ;('ctx.drawImage(this.image, this.x2, this.y, this.width, this.height)')
+            ctx.drawImage(
+              this.image,
+              this.x + this.width,
+              this.y,
+              this.width,
+              this.height
+            )
+          }
+        }
+
+        let layers = [
+          new Layer(backgroundLayer1, 0.5),
+          new Layer(backgroundLayer2, 0.5),
+          new Layer(backgroundLayer3, 0.5),
+          new Layer(backgroundLayer4, 0.5),
+          new Layer(backgroundLayer5, 0.5)
+        ]
+
+        function animate() {
+          ctx.clearRect(0, 0, canvas.width, canvas.height)
+
+          layers.forEach(layer => {
+            layer.draw()
+            layer.update()
+          })
+          console.log(layers[0].x)
+
+          requestAnimationFrame(animate)
+        }
+        animate()
+      })
+    </script>
+  </body>
+</html>

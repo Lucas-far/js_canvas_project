@@ -31,6 +31,8 @@
         up: { pressed: false },
         down: { pressed: false }
       }
+      let boxInputs = ['keypress', 'keydown', 'keyup']
+      let chosenInput = undefined
 
       function timeFunction(action, delay) {
         setTimeout(function () {
@@ -49,7 +51,6 @@
           upperPunchSprite,
           lowKickSprite,
           kickSequenceSprite,
-          otherSprites = [],
           x,
           y,
           goHorizontal,
@@ -72,7 +73,6 @@
           this.upperPunchSprite = upperPunchSprite
           this.lowKickSprite = lowKickSprite
           this.kickSequenceSprite = kickSequenceSprite
-          this.otherSprites = otherSprites
           this.x = x
           this.y = y
           this.goHorizontal = goHorizontal // Ao pressionar um controle, o personagem avança
@@ -186,10 +186,8 @@
             this.frameCounter = 0
           }
 
-          
           /* this.x += this.goHorizontal
           this.y += this.goVertical */
-         
 
           // ÚLTIMO ADICIONADO
           /* if (this.y + this.height + this.goVertical <= canvas.height) {
@@ -200,40 +198,65 @@
         }
       }
 
+      class Landscape {
+        constructor({ x, y, image, width, height }) {
+          this.x = x
+          this.y = y
+          this.image = image
+          this.width = width
+          this.height = height
+        }
+
+        draw() {
+          c.drawImage(this.image, this.x, this.y, this.width, this.height)
+        }
+      }
+
+      // PAISAGEM
+      let landscapes = []
+
+      // PLANO DE FUNDO
+      let landscapeBackground = new Image()
+      landscapeBackground.src = '../assets/background.png'
+
+      // COLINAS
+      let landscapeHills = new Image()
+      landscapeHills.src = '../assets/hills.png'
+
       // PERSONAGEM
       let charLiuKang = undefined
 
       // PARADO ->
       let liuKangIdleRight = new Image()
-      liuKangIdleRight.src = './assets/liu_kang_idle_right.png'
+      liuKangIdleRight.src = '../assets/liu_kang_idle_right.png'
 
       // PARADO <-
       let liuKangIdleLeft = new Image()
-      liuKangIdleLeft.src = './assets/liu_kang_idle_left.png'
+      liuKangIdleLeft.src = '../assets/liu_kang_idle_left.png'
 
       // ANDANDO PARA A DIREITA
       let liuKangWalkingRight = new Image()
-      liuKangWalkingRight.src = './assets/liu_kang_walking_right.png'
+      liuKangWalkingRight.src = '../assets/liu_kang_walking_right.png'
 
       // ANDANDO PARA A ESQUERDA
       let liuKangWalkingLeft = new Image()
-      liuKangWalkingLeft.src = './assets/liu_kang_walking_left.png'
+      liuKangWalkingLeft.src = '../assets/liu_kang_walking_left.png'
 
       // PULANDO ->
       let liuKangJumpRight = new Image()
-      liuKangJumpRight.src = './assets/liu_kang_jump_right.png'
+      liuKangJumpRight.src = '../assets/liu_kang_jump_right.png'
 
       // GANCHO
       let liuKangUpperPunch = new Image()
-      liuKangUpperPunch.src = './assets/liu_kang_upper_punch.png'
+      liuKangUpperPunch.src = '../assets/liu_kang_upper_punch.png'
 
       // CHUTE BAIXO
       let liuKangLowKick = new Image()
-      liuKangLowKick.src = './assets/liu_kang_low_kick.png'
+      liuKangLowKick.src = '../assets/liu_kang_low_kick.png'
 
       // SEQUÊNCIA DE PERNA
       let liuKangKickSequence = new Image()
-      liuKangKickSequence.src = './assets/liu_kang_kick_sequence.png'
+      liuKangKickSequence.src = '../assets/liu_kang_kick_sequence.png'
 
       function init() {
         // PERSONAGEM
@@ -247,7 +270,6 @@
           upperPunchSprite: liuKangUpperPunch,
           lowKickSprite: liuKangLowKick,
           kickSequenceSprite: liuKangKickSequence,
-          otherSprites: [liuKangUpperPunch],
           x: 350,
           y: 350,
           goHorizontal: 0,
@@ -261,12 +283,27 @@
           customHeight: 200,
           gravity: 3.3
         })
+        // PAISAGENS
+        landscapes = [
+          new Landscape({
+            image: landscapeBackground,
+            x: -1,
+            y: -1,
+            width: 11643,
+            height: 732
+          }),
+          new Landscape({
+            image: landscapeHills,
+            x: 0,
+            y: 0,
+            width: 7545,
+            height: 592
+          })
+        ]
       }
 
       function animate() {
-        // Requisição na própria função
-        // Cor de fundo do canvas
-        // Destruição do retângulo
+        // Requisição na própria função // Cor de fundo do canvas // Destruição do retângulo
         requestAnimationFrame(animate)
         c.fillStyle = 'darkcyan'
         c.fillRect(0, 0, canvas.width, canvas.height)
@@ -277,6 +314,9 @@
         */
 
         // ========== ANIMAÇÃO ==========
+        landscapes.forEach(item => {
+          item.draw()
+        })
         charLiuKang.draw()
         charLiuKang.update()
 
@@ -294,35 +334,67 @@
           charLiuKang.goHorizontal = 0
         }
 
-        ;('IMPEDIR SAÍDA DA TELA ->')
+        ;('IMPEDIR SAÍDA DA TELA -> COM PAISAGEM ESTÁTICA')
         // Se o jogador chegou ao canto ->, considerando o tamanho do jogador / 2
         // Anular a sua movimentação para ->, adicionando velocidade para <-
         if (charLiuKang.x > canvas.width - charLiuKang.customWidth / 2) {
           charLiuKang.x -= charLiuKang.speed
         }
-
-        ;('IMPEDIR SAÍDA DA TELA <-')
+        ;('IMPEDIR SAÍDA DA TELA -> COM PAISAGEM RESPOSNIVA')
+        // Se o jogador chegou ao canto ->, considerando o tamanho do jogador / 2
+        // Anular a sua movimentação para ->, adicionando velocidade para <-
+        /* if (charLiuKang.x > canvas.width - charLiuKang.customWidth) {
+          charLiuKang.x -= charLiuKang.speed
+        } */
+        ;('IMPEDIR SAÍDA DA TELA <- COM PAISAGEM ESTÁTICA')
         // Se o jogador chegou ao canto esquerdo
         // Anular a sua movimentação para <-, adicionando velocidade para ->
         if (charLiuKang.x < 0) {
           console.log('FIM')
           charLiuKang.x += charLiuKang.speed
         }
+        ;('IMPEDIR SAÍDA DA TELA <- COM PAISAGEM RESPONSIVA')
+        // Se o jogador chegou ao canto esquerdo
+        // Anular a sua movimentação para <-, adicionando velocidade para ->
+        /* if (charLiuKang.x < charLiuKang.customWidth) {
+          console.log('FIM')
+          charLiuKang.x += charLiuKang.speed
+        } */
+      
+        ;('PAISAGEM RESPONSIVA AO MOVIMENTO DO JOGADOR')
+        /* if (keys.right.pressed && charLiuKang.x > 500) {
+          landscapes.forEach(landscape => {
+            landscape.x -= charLiuKang.speed
+          })
+        }
 
-        ;('COLETAGEM DE INFORMAÇÃO DE MOVIMENTAÇÃO')
+        if (keys.left.pressed && landscapes[1].x < 0) {
+          landscapes.forEach(landscape => {
+            landscape.x += charLiuKang.speed
+          })
+        } */
+
+        // COLETAGEM DE INFORMAÇÃO DE MOVIMENTAÇÃO
         /* 
         console.log(
           `${charLiuKang.x}    ${canvas.width}    ${charLiuKang.customWidth}`
         ) 
         */
+        // console.log(`X atual: ${charLiuKang.x}`)
+        // console.log(`Y atual: ${charLiuKang.y}`)
+        console.log(`X da paisagem: ${landscapes[1].x}`)
       }
 
       init()
       animate()
-      let ground = charLiuKang.y
 
-      addEventListener('keypress', event => {
+      /* addEventListener('keypress', event => {
         switch (event.key) {
+          case 'w':
+            keys.up.pressed = true
+            // charLiuKang.y -= 50
+            charLiuKang.currentSprite = charLiuKang.jumpRightSprite
+            break
           case 'a':
             keys.left.pressed = true
             charLiuKang.currentSprite = charLiuKang.walkingLeftSprite
@@ -341,10 +413,16 @@
             charLiuKang.currentSprite = charLiuKang.kickSequenceSprite
             break
         }
-      })
+      }) */
 
       addEventListener('keydown', event => {
         switch (event.key) {
+          case 'w':
+            keys.up.pressed = true
+            // charLiuKang.y -= 50
+            charLiuKang.currentSprite = charLiuKang.jumpRightSprite
+            // charLiuKang.y -= 50
+            break
           case 'a':
             keys.left.pressed = true
             charLiuKang.currentSprite = charLiuKang.walkingLeftSprite
@@ -353,29 +431,26 @@
             keys.right.pressed = true
             charLiuKang.currentSprite = charLiuKang.walkingRightSprite
             break
-          case 'a':
-            keys.left.pressed = true
-            charLiuKang.currentSprite = charLiuKang.standLeftSprite
-            break
           case 'x':
-            charLiuKang.currentSprite = charLiuKang.standRightSprite
+            charLiuKang.currentSprite = charLiuKang.upperPunchSprite
             // keys.x.pressed = false
             break
           case 'z':
-            charLiuKang.currentSprite = charLiuKang.standRightSprite
+            charLiuKang.currentSprite = charLiuKang.lowKickSprite
             break
           case 'c':
             charLiuKang.currentSprite = charLiuKang.kickSequenceSprite
             break
-          case 'w':
-            keys.up.pressed = true
-            charLiuKang.y -= 200
-            charLiuKang.currentSprite = charLiuKang.jumpRightSprite
         }
       })
 
       addEventListener('keyup', event => {
         switch (event.key) {
+          case 'w':
+            keys.up.pressed = false
+            // charLiuKang.y -= 50
+            charLiuKang.currentSprite = charLiuKang.standRightSprite
+            break
           case 'a':
             keys.left.pressed = false
             charLiuKang.currentSprite = charLiuKang.standLeftSprite
@@ -397,10 +472,10 @@
             break
           case 'w':
             keys.up.pressed = false
-            // charLiuKang.currentSprite = charLiuKang.standRightSprite
+          // charLiuKang.currentSprite = charLiuKang.standRightSprite
         }
       })
-      console.log(`Y parado: ${charLiuKang.y}`)
+
       // console.log(charLiuKang.goVertical)
     </script>
   </body>

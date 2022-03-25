@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Lobo</title>
+    <style>
+      body {
+        background-color: #222;
+      }
+
+      #container {
+        border: cyan solid 5px;
+        position: absolute;
+        width: 810px;
+        transform: translate(-50%, -50%);
+        top: 50%;
+        left: 50%;
+      }
+
+      #canvas1 {
+        border: deeppink solid 5px;
+        position: relative;
+        width: 800px;
+        height: 700px;
+      }
+
+      #slider {
+        width: 90%;
+        margin: 1rem;
+      }
+
+      p {
+        color: violet;
+        margin: 1rem;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="container">
+      <canvas id="canvas1"></canvas>
+      <p>Game speed:<span id="showGameSpeed"></span></p>
+      <input
+        type="range"
+        min="0"
+        max="20"
+        value="5"
+        class="slider"
+        id="slider"
+      />
+    </div>
+
+    <script>
+      const canvas = document.getElementById('canvas1')
+      const ctx = canvas.getContext('2d')
+      const canvasWidth = (canvas.width = 800)
+      const canvasHeight = (canvas.height = 700)
+      const backgroundLayer1 = new Image()
+      const backgroundLayer2 = new Image()
+      const backgroundLayer3 = new Image()
+      const backgroundLayer4 = new Image()
+      const backgroundLayer5 = new Image()
+      backgroundLayer1.src = '../assets/layer-1.png'
+      backgroundLayer2.src = '../assets/layer-2.png'
+      backgroundLayer3.src = '../assets/layer-3.png'
+      backgroundLayer4.src = '../assets/layer-4.png'
+      backgroundLayer5.src = '../assets/layer-5.png'
+
+      let gameSpeed = 10
+      let gameFrame = 0
+
+      // Tag: input
+      // Input -> propriedade = 5 (modificado para var js)
+      // Conforme o "slider" muda, o valor muda
+      let slider = document.getElementById('slider')
+      slider.value = gameSpeed
+
+      // Tag: p
+      // p = var js
+      // Conforme o "slider" muda, o valor em "p" muda
+      let showGameSpeed = document.getElementById('showGameSpeed')
+      showGameSpeed.innerHTML = gameSpeed
+
+      slider.addEventListener('change', event => {
+        console.log(event.target.value)
+        gameSpeed = event.target.value
+        // Chamado novamente para atualizar o valor no html
+        showGameSpeed.innerHTML = gameSpeed
+      })
+
+      class Layer {
+        constructor(image, speedModifier) {
+          // Não precisam ser definidos
+          this.width = 2400
+          this.height = 700
+          this.x = 0
+          // this.x2 = this.width
+          this.y = 0
+          // Precisam ser definidos
+          this.image = image
+          this.speedModifier = speedModifier
+          // Não precisam ser definidos, mas são dependentes
+          this.speed = gameSpeed * this.speedModifier
+        }
+
+        update() {
+          // Variável para cenários com movimentos dinâmicos em velocidades diferentes
+          // Variável que ajuda a alterar o valor de "this.x"
+          this.speed = gameSpeed * this.speedModifier
+
+          this.x = gameFrame * this.speed % this.width
+        }
+
+        // A mesma imagem é criada e recriada
+        // [ this.x ] Na primeira criação, ela está posicionada de forma padrão
+        // [ this.x ] Na primeira criação, sai do 0 até - 2400 (de uma ponta da imagem para a outra)
+        // [ this.x ] Ao chegar ao fim (-2400), retorna ao (0), mas isso não retorna ao início, apenas faz o cenário parar
+        // [ this.x ] Para voltar ao início, é preciso voltar a quantidade que foi percorrida
+        // [ this.x ] Se foi percorrido (-2400) é preciso voltar (2400), para chegar ao (0)
+        draw() {
+          ctx.drawImage(this.image, this.x, this.y, this.width, this.height)
+          // ;('ctx.drawImage(this.image, this.x2, this.y, this.width, this.height)')
+          ctx.drawImage(
+            this.image,
+            this.x + this.width,
+            this.y,
+            this.width,
+            this.height
+          )
+        }
+      }
+
+      let layers = [
+        new Layer(backgroundLayer1, 0.5),
+        new Layer(backgroundLayer2, 0.5),
+        new Layer(backgroundLayer3, 0.5),
+        new Layer(backgroundLayer4, 0.5),
+        new Layer(backgroundLayer5, 0.5)
+      ]
+
+      function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height)
+
+        layers.forEach(layer => {
+          layer.draw()
+          layer.update()
+        })
+        console.log(layers[0].x)
+        gameFrame --
+
+        requestAnimationFrame(animate)
+      }
+      animate()
+    </script>
+  </body>
+</html>

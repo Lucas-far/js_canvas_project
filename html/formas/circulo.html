@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Círculo</title>
+    <style>
+      body {
+        background-color: #222;
+      }
+      #canvas1 {
+        border: deeppink solid 5px;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="canvas1"></canvas>
+    <script>
+      const canvas = document.getElementById('canvas1')
+      const ctx = canvas.getContext('2d')
+      const canvasWidth = (canvas.width = 600)
+      const canvasHeight = (canvas.height = 600)
+
+      function randomIndex(targetVar) {
+        const index = Math.floor(Math.random() * targetVar.length)
+        return index
+      }
+
+      function rgbTable() {
+        let arrayVar = []
+
+        for (let i = 0; i < 255; i++) {
+          arrayVar.push(i)
+        }
+
+        let indexForRed = randomIndex(arrayVar)
+        let indexForGreen = randomIndex(arrayVar)
+        let indexForBlue = randomIndex(arrayVar)
+
+        return `rgba(${arrayVar[indexForRed]},${arrayVar[indexForGreen]},${arrayVar[indexForBlue]})`
+      }
+
+      // shapeDimension = this.sphereRadius (impedir criar círculo cortado no canvas)
+      function coordinate({ measure, shapeDimension = 0 }) {
+        let canvasWidth = []
+        let canvasHeight = []
+
+        if (measure == 'width') {
+          for (let i = shapeDimension; i < canvas.width - shapeDimension; i++) {
+            canvasWidth.push(i)
+          }
+          return canvasWidth[randomIndex(canvasWidth)]
+        } else if (measure == 'height') {
+          for (
+            let i2 = shapeDimension;
+            i2 < canvas.height - shapeDimension;
+            i2++
+          ) {
+            canvasHeight.push(i2)
+          }
+          return canvasHeight[randomIndex(canvasHeight)]
+        }
+      }
+
+      class Circle {
+        constructor() {
+          this.rgb = rgbTable()
+
+          this.dimensions = [
+            7, 10, 13, 16, 19, 22, 25, 28, 31, 34, 37, 40, 43, 46, 49, 52
+          ]
+
+          this.sphereRadius = this.dimensions[randomIndex(this.dimensions)]
+
+          this.x = coordinate({
+            measure: 'width',
+            shapeDimension: this.sphereRadius
+          })
+
+          this.y = coordinate({
+            measure: 'height',
+            shapeDimension: this.sphereRadius
+          })
+        }
+
+        draw() {
+          ctx.beginPath()
+          // ctx.lineWidth = 10
+          ctx.fillStyle = this.rgb
+          ctx.strokeStyle = this.rgb
+          // 3 últimos parâmetros recomenda-se serem fixos
+          ctx.arc(this.x, this.y, this.sphereRadius, 0, Math.PI * 2, false)
+          ctx.stroke()
+        }
+
+        update() {}
+      }
+
+      let circles = []
+
+      // Dentro da função "animate" cria uma efeito completamente diferente
+      for (let i = 0; i < 50; i++) {
+        let newCircle = new Circle()
+        console.log(
+          `${canvas.width} -> ${newCircle.x}    ${canvas.height} -> ${newCircle.y}  ||  ${newCircle.sphereRadius}`
+        )
+        circles.push(newCircle)
+      }
+
+      function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height)
+
+        circles.forEach(circle => {
+          circle.draw()
+        })
+
+        requestAnimationFrame(animate)
+      }
+
+      animate()
+    </script>
+  </body>
+</html>
