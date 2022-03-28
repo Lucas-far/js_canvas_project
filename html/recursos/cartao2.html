@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cartão</title>
+    <style>
+      * {
+        margin: 0; /*top: 0, left: 0*/
+        padding: 0;
+        box-sizing: border-box; /*impedir padding de ser somada ao cálculo de tamanho*/
+        font-family: consolas;
+      }
+      body {
+        background-color: #222;
+        display: flex; /*comprimir conteúdo num mesmo espaço (apertar na tela)*/
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh; /*conteúdo centraliza na tela*/
+      }
+      .container {
+        position: relative;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 40px 0;
+        flex-wrap: wrap;
+      }
+      .container .box {
+        position: relative;
+        width: 320px; /*conteúdo desgruda da tela e centraliza (em tela cheia)*/
+        height: 400px; /*conteúdo sobe um pouco*/
+        color: #fff;
+        background-color: rgba(0, 0, 0, 0.1);
+        display: flex;
+        justify-content: center;
+        align-items: center; /*conteúdo centraliza (sai do topo) no plano de fundo*/
+        margin: 20px 30px; /*os 3 cartões de separam horizontalmente*/
+        transition: 0.5s; /*duração de uma ação (contexto: passar o mouse) (logo abaixo)*/
+      }
+      .container .box:hover {
+        transform: translate(-20px); /*ao passar o mouse, conteúdo move <-*/
+      }
+      .container .box::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+      }
+      /*conteúdo visível por trás*/
+      .container .box::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        
+      }
+      .container .box span {
+        position: absolute;
+        top: 6px;
+        left: 6px;
+        right: 6px;
+        bottom: 6px;
+        /*Com 3 pars, o cartão ganha bordas com as suas cores*/
+        /*Com 4 pars, corrige um defeito nas extremidades da cor de fundo em .container .box*/
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 2; /*plano de fundo se torna transparente*/
+      }
+      .container .box span::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 50%;
+        height: 100%;
+        /*Com 3 pars, um fundo branco ocupa metade do cartão*/
+        /*Com 4 pars, o fundo branco fica menos transparente, mostrando as cores foscas do cartão*/
+        /* background-color: rgba(255,255,255,0.1); */
+        pointer-events: none;
+      }
+      .container .box .content {
+        position: relative;
+        z-index: 2; /*Texto na tag <p> torna-se visível*/
+        padding: 20px 20px; /*ajustes do texto no cartão*/
+      }
+      .container .box .content h2 {
+        text-align: center;
+        margin: 10px;
+      }
+      .container .box .content a {
+        display: inline-block;
+        background-color: #222;
+        padding: 10px;
+        text-decoration: none;
+        margin: 10px 0; /*afastar o link do texto na tag <p> verticalmente*/
+        border-radius: 7px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="box">
+        <span></span>
+        <div class="content">
+          <h2>Cartão 1</h2>
+          <p>
+            Ténis (português europeu) ou tênis (português brasileiro) é um
+            esporte de origem inglesa, disputado em quadras geralmente abertas e
+            de superfícies sintéticas, cimento, saibro ou relva. Participam no
+            jogo dois oponentes ou duas duplas de oponentes, podendo ser mistas
+            (homens e mulheres) ou não. A quadra é dividida em duas meia-quadras
+            por uma rede, e o objetivo do jogo é rebater uma pequena bola para
+            além da rede (para a meia-quadra adversária) com ajuda de uma
+            raquete.
+          </p>
+          <!-- <a href="#">Mais</a> -->
+        </div>
+      </div>
+    </div>
+
+    <div class="container">
+      <div id="box2" class="box box2">
+        <span></span>
+        <div class="content">
+          <h2>Cartão 2</h2>
+          <p>
+            Ténis (português europeu) ou tênis (português brasileiro) é um
+            esporte de origem inglesa, disputado em quadras geralmente abertas e
+            de superfícies sintéticas, cimento, saibro ou relva. Participam no
+            jogo dois oponentes ou duas duplas de oponentes, podendo ser mistas
+            (homens e mulheres) ou não. A quadra é dividida em duas meia-quadras
+            por uma rede, e o objetivo do jogo é rebater uma pequena bola para
+            além da rede (para a meia-quadra adversária) com ajuda de uma
+            raquete.
+          </p>
+          <!-- <a href="#">Mais</a> -->
+        </div>
+      </div>
+    </div>
+
+    <div class="container">
+      <div class="box box3">
+        <span></span>
+        <div class="content">
+          <h2>Cartão 3</h2>
+          <p>
+            Ténis (português europeu) ou tênis (português brasileiro) é um
+            esporte de origem inglesa, disputado em quadras geralmente abertas e
+            de superfícies sintéticas, cimento, saibro ou relva. Participam no
+            jogo dois oponentes ou duas duplas de oponentes, podendo ser mistas
+            (homens e mulheres) ou não. A quadra é dividida em duas meia-quadras
+            por uma rede, e o objetivo do jogo é rebater uma pequena bola para
+            além da rede (para a meia-quadra adversária) com ajuda de uma
+            raquete.
+          </p>
+          <!-- <a href="#">Mais</a> -->
+        </div>
+      </div>
+    </div>
+
+    <!-- <div id="background-image"></div> -->
+
+    <script>
+      // Função para escolher um valor inteiro de algum lugar
+      function randomIndex(targetVar) {
+        const index = Math.floor(Math.random() * targetVar.length)
+        return index
+      }
+
+      // Função para gerar um código string de cor rgb
+      function rgbTable() {
+        let arrayVar = []
+
+        for (let i = 0; i < 255; i++) {
+          arrayVar.push(i)
+        }
+
+        let indexForRed = randomIndex(arrayVar)
+        let indexForGreen = randomIndex(arrayVar)
+        let indexForBlue = randomIndex(arrayVar)
+
+        return `rgba(${arrayVar[indexForRed]},${arrayVar[indexForGreen]},${arrayVar[indexForBlue]})`
+      }
+
+      // Evento de teclado, para mudar a cor conforme uma tecla for pressionada
+      addEventListener('keydown', event => {
+        let chosenInks = [rgbTable(), rgbTable(), rgbTable(), rgbTable()]
+
+        switch (event.key) {
+          case 'q':
+            document.body.style.backgroundImage = `radial-gradient(circle, ${chosenInks[0]}, ${chosenInks[1]}, ${chosenInks[2]}, ${chosenInks[3]})`
+            // document.body.style.backgroundImage = `radial-gradient(circle at bottom center, ${chosenInks[0]}, ${chosenInks[1]}, ${chosenInks[2]}, ${chosenInks[3]})`
+            // document.getElementById('background-image').innerHTML = chosenInks
+            break
+          case 'w':
+            // document.body.style.backgroundImage = `linear-gradient(to right, ${chosenInks[0]}, ${chosenInks[1]}, ${chosenInks[2]}, ${chosenInks[3]})`
+            document.body.style.backgroundImage = `linear-gradient(45deg, ${chosenInks[0]}, ${chosenInks[1]}, ${chosenInks[2]}, ${chosenInks[3]})`
+            document.getElementById('background-image').innerHTML = chosenInks
+            break
+        }
+      })
+    </script>
+  </body>
+</html>

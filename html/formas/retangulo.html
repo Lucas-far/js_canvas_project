@@ -104,13 +104,16 @@
         }
 
         draw() {
+          // Retângulos preenchidos     || (cor = fillStyle  ) (desenho = fillRect  ) (ativação = fill  )
+          // Retângulos não preenchidos || (cor = strokeStyle) (desenho = strokeRect) (ativação = stroke)
           ctx.beginPath()
           // ctx.lineWidth = 10
-          // ctx.strokeStyle = rgbTable()
-          ctx.fillStyle = rgbTable()
-          ctx.fillRect(this.x, this.y, this.width, this.height)
+          ctx.strokeStyle = rgbTable()
+          ctx.strokeRect(this.x, this.y, this.width, this.height)
           ctx.stroke()
-          ctx.fill()
+          // ctx.fillStyle = rgbTable()
+          // ctx.fillRect(this.x, this.y, this.width, this.height)
+          // ctx.fill()
         }
 
         // MOVIMENTAÇÃO

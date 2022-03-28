@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>document.body.style.backgroundColor</title>
+    <style>
+      body {
+        background-color: #222;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Tag que recebe uma var js para mostrar o código da cor usada -->
+    <div>
+      Cor de fundo:
+      <div id="background-color"></div>
+    </div>
+
+    <script>
+      // Função para escolher um valor inteiro de algum lugar
+      function randomIndex(targetVar) {
+        const index = Math.floor(Math.random() * targetVar.length)
+
+        return index
+      }
+
+      // Função para gerar um código string de cor rgb
+      function rgbTable() {
+        let arrayVar = []
+
+        for (let i = 0; i < 255; i++) {
+          arrayVar.push(i)
+        }
+
+        let indexForRed = randomIndex(arrayVar)
+        let indexForGreen = randomIndex(arrayVar)
+        let indexForBlue = randomIndex(arrayVar)
+
+        return `rgba(${arrayVar[indexForRed]},${arrayVar[indexForGreen]},${arrayVar[indexForBlue]})`
+      }
+
+      // Evento de teclado, para mudar a cor conforme uma tecla for pressionada
+      addEventListener('keydown', event => {
+        switch (event.key) {
+          case 'q':
+            let color = rgbTable()
+            document.body.style.backgroundColor = color // document.body.style.background = 'blue'
+            document.getElementById('background-color').innerHTML = color
+            break
+        }
+      })
+    </script>
+  </body>
+</html>

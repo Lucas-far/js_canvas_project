@@ -17,7 +17,9 @@
   <body>
     <canvas id="canvas1"></canvas>
     <script>
+      let currentEventKey = undefined
       addEventListener('keydown', event => {
+        currentEventKey = event.key
         switch (event.key) {
           case 'a':
             characters[0].currentSprite = characters[0].idleLeft
@@ -27,6 +29,9 @@
             break
           case 'z':
             characters[0].currentSprite = characters[0].highKickSequenceRight
+            break
+          case 'x':
+            characters[0].currentSprite = characters[0].dragon
             break
         }
       })
@@ -42,6 +47,9 @@
           case 'z':
             characters[0].currentSprite = characters[0].idleRight
             break
+          case 'x':
+            characters[0].currentSprite = characters[0].idleRight
+            break
         }
       })
 
@@ -50,11 +58,11 @@
       const canvasWidth = (canvas.width = 600)
       const canvasHeight = (canvas.height = 600)
 
-      let liuKangDtb = {
-        srcWidth: 100,
-        srcHeight: 124,
-        canvasWidth: 100,
-        canvasHeight: 124
+      const keys = {
+        right: { pressed: false },
+        left: { pressed: false },
+        up: { pressed: false },
+        down: { pressed: false }
       }
 
       class Character {
@@ -63,21 +71,28 @@
           idleRight,
           idleLeft,
           highKickSequenceRight,
+          dragon,
+          dragon2,
           whereX,
           whereY,
-          frameAmount,
-          gameFrame,
-          delay
+          spriteFrame,
+          spriteFrameAmount,
+          delayCounter,
+          spriteDelay
         }) {
           this.currentSprite = currentSprite
           this.idleRight = idleRight
           this.idleLeft = idleLeft
           this.highKickSequenceRight = highKickSequenceRight
+          this.dragon = dragon
+          this.dragon2 = dragon2
           this.whereX = whereX
           this.whereY = whereY
-          this.frameAmount = frameAmount
-          this.gameFrame = gameFrame
-          this.delay = delay
+          this.spriteFrame = spriteFrame // 0 (relacionamento: spriteFrameAmount)
+          this.spriteFrameAmount = spriteFrameAmount // 5
+          this.delayCounter = delayCounter // 0 (relacionamento: spriteDelay)
+          this.spriteDelay = spriteDelay // 5
+
           this.srcWidth = 100
           this.srcHeight = 124
           this.canvasWidth = 100
@@ -86,23 +101,10 @@
           this.heightFixed = 0
         }
 
-        '========== EXPLICAÇÃO SOBRE A FUNÇÃO: drawImage() =========='
-        'Do parâmetro 1 ao 5: perspectiva da imagem'
-        'Do parâmetro 6 ao 9: perspectiva do canvas'
-        '1 = referência da imagem no computador ou outra fonte'
-        '2 = recorte: distância da <-'
-        '3 = recorte: distância do topo'
-        '4 = quanto para frente (largura da imagem recortada)'
-        '5 = quanto para baixo (altura da imagem recortada)'
-        '6 = distância da <- do CANVAS'
-        '7 = distância do topo do CANVAS'
-        '8 = largura da imagem dentro do CANVAS'
-        '9 = altura da imagem dentro do CANVAS'
-
         draw() {
           ctx.drawImage(
             this.currentSprite,
-            this.srcWidth * this.globalFrame,
+            this.srcWidth * this.spriteFrame,
             this.heightFixed,
             this.srcWidth,
             this.srcHeight,
@@ -118,13 +120,13 @@
           if (this.y + this.customHeight + this.goVertical <= canvas.height)
             this.y += this.gravity */
 
-          this.gameFrame++
+          this.delayCounter++
 
-          if (this.gameFrame % this.delay == 0) {
-            if (this.globalFrame < this.frameAmount) {
-              this.globalFrame++
+          if (this.delayCounter % this.spriteDelay == 0) {
+            if (this.spriteFrame < this.spriteFrameAmount) {
+              this.spriteFrame++
             } else {
-              this.globalFrame = 0
+              this.spriteFrame = 0
             }
           }
         }
@@ -137,6 +139,10 @@
       let liuKangHighKickSequenceRight = new Image()
       liuKangHighKickSequenceRight.src =
         '../assets/liu_kang_dtb/_high_kick_sequence3.png'
+      let liuKangDragon = new Image()
+      liuKangDragon.src = '../assets/liu_kang_dtb/_.png'
+      let liuKangDragon2 = new Image()
+      liuKangDragon2.src = '../assets/liu_kang_dtb/__.png'
 
       let characters = []
 
@@ -147,11 +153,31 @@
             idleRight: liuKangIdle,
             idleLeft: liuKangIdleLeft,
             highKickSequenceRight: liuKangHighKickSequenceRight,
+            dragon: liuKangDragon,
+            dragon2: liuKangDragon2,
             whereX: 100,
             whereY: 400,
-            frameAmount: 11,
-            gameFrame: 0,
-            delay: 5
+            spriteFrame: 0,
+            spriteFrameAmount: 11,
+            delayCounter: 0,
+            spriteDelay: 5
+          })
+        )
+
+        characters.push(
+          new Character({
+            currentSprite: liuKangDragon2,
+            idleRight: undefined,
+            idleLeft: undefined,
+            highKickSequenceRight: undefined,
+            dragon: undefined,
+            dragon2: liuKangDragon2,
+            whereX: -100,
+            whereY: -400,
+            spriteFrame: 0,
+            spriteFrameAmount: 11,
+            delayCounter: 0,
+            spriteDelay: 5
           })
         )
       }
@@ -163,6 +189,13 @@
           character.draw()
           character.update()
         })
+
+        characters[1].whereX += 13
+        characters[1].whereY += 0.5
+        if (characters[0].currentSprite == characters[0].dragon) {
+          characters[1].whereX = characters[0].whereX + 40
+          characters[1].whereY = characters[0].whereY
+        }
 
         requestAnimationFrame(animate)
       }

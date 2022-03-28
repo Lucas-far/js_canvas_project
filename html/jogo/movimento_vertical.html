@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Movimentação com ênfase na vertical</title>
+    <style>
+      body {
+        background-color: #222;
+      }
+      #canvas1 {
+        border: deeppink solid 5px;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 1080px;
+        height: 600px;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="canvas1"></canvas>
+    <script>
+      const canvas = document.getElementById('canvas1')
+      const ctx = canvas.getContext('2d')
+      const canvasWidth = (canvas.width = 500)
+      const canvasHeight = (canvas.height = 1000)
+
+      const numberOfEnemies = 25
+      let enemiesBox = []
+
+      const enemy1 = new Image()
+      const enemy2 = new Image()
+      const enemy3 = new Image()
+      const enemy4 = new Image()
+      enemy1.src = '/assets/enemy1.png'
+      enemy2.src = '/assets/enemy2.png'
+      enemy3.src = '/assets/enemy3.png'
+      enemy4.src = '/assets/enemy4.png'
+
+      function randomIndex(targetVar) {
+        const index = Math.floor(Math.random() * targetVar.length)
+        return index
+      }
+
+      class Enemy {
+        constructor({
+          sprite,
+          spriteWidth,
+          spriteHeight,
+          spriteFrame,
+          spriteFrameAmount,
+          delayCounter,
+          spriteDelay
+        }) {
+          this.sprite = sprite // local da imagem
+          this.spriteWidth = spriteWidth // 293
+          this.spriteHeight = spriteHeight // 155
+          this.spriteFrame = spriteFrame // 0 (relacionamento: spriteFrameAmount)
+          this.spriteFrameAmount = spriteFrameAmount // 5
+          this.delayCounter = delayCounter // 0 (relacionamento: spriteDelay)
+          this.spriteDelay = spriteDelay // 5
+
+          this.widthTable = [25, 30, 35, 40, 45, 50]
+          this.heightTable = [50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100]
+          this.width = this.spriteWidth / 4
+          this.height = this.spriteHeight / 2
+          this.x = Math.random() * (canvas.width - this.width)
+          this.y = Math.random() * (canvas.height - this.height)
+
+          // ============== MOVIMENTAÇÃO MAIS VERTICAL ==============
+          this.speed = Math.random() * 1.5
+          this.angle = 0
+          this.angleSpeed = Math.random() * 0.2
+        }
+
+        draw() {
+          ctx.drawImage(
+            this.sprite,
+            this.spriteFrame * this.spriteWidth,
+            0,
+            this.spriteWidth,
+            this.spriteHeight,
+            this.x,
+            this.y,
+            this.width,
+            this.height
+          )
+        }
+
+        update() {
+          'SOBRE COORDENADAS'
+          /* 
+          this.x += 1 // sair a -> (se positivo)
+          this.x -= 1 // sair a <- (se negativo)
+          this.y += 1 // sair para baixo (se positivo)
+          this.y -= 1 // sair para cima (se negativo) 
+          */
+
+          // ============== MOVIMENTAÇÃO MAIS VERTICAL ==============
+          // Movimentadores (imagens p/ <- por conta do valor negativo)
+          this.x -= this.speed
+          this.angle += this.angleSpeed
+
+          // Modificador
+          let multiplier = Math.random() * 26
+          this.y += multiplier * Math.sin(this.angle)
+
+          // ============== RESETAR IMAGEM ============== (apenas p/ melhorar a visualização)
+          if (this.x + this.width < 0) {
+            this.x = canvas.width
+          }
+
+          this.delayCounter++
+
+          // Um sprite de um spritesheet só é renderizado quando a 1a condição for satisfeita
+          // A cada sprite renderizado, a var que o referencia se aproxima da quantidade total de sprites
+          // Quando todos os sprites forem renderizados, a sequência de sprites se reinicia
+          if (this.delayCounter % this.spriteDelay === 0) {
+            if (this.spriteFrame < this.spriteFrameAmount) {
+              this.spriteFrame++
+            } else {
+              this.spriteFrame = 0
+            }
+          }
+        }
+      }
+
+      function enemyBirth() {
+        const enemyTypes = [1, 2, 3, 4]
+        const enemiesWidth = [293, 266, 218, 213]
+        const enemiesHeight = [155, 188, 177, 212]
+        const enemies = [enemy1, enemy2, enemy3, enemy4]
+
+        let chosen = enemyTypes[randomIndex(enemyTypes)]
+        if (chosen == 1) {
+          let newEnemy = new Enemy({
+            sprite: enemies[chosen - 1],
+            spriteWidth: enemiesWidth[chosen - 1],
+            spriteHeight: enemiesHeight[chosen - 1],
+            spriteFrame: 0,
+            spriteFrameAmount: 5,
+            delayCounter: 0,
+            spriteDelay: 5
+          })
+          enemiesBox.push(newEnemy)
+        }
+        if (chosen == 2) {
+          let newEnemy = new Enemy({
+            sprite: enemies[chosen - 1],
+            spriteWidth: enemiesWidth[chosen - 1],
+            spriteHeight: enemiesHeight[chosen - 1],
+            spriteFrame: 0,
+            spriteFrameAmount: 5,
+            delayCounter: 0,
+            spriteDelay: 5
+          })
+          enemiesBox.push(newEnemy)
+        }
+        if (chosen == 3) {
+          let newEnemy = new Enemy({
+            sprite: enemies[chosen - 1],
+            spriteWidth: enemiesWidth[chosen - 1],
+            spriteHeight: enemiesHeight[chosen - 1],
+            spriteFrame: 0,
+            spriteFrameAmount: 5,
+            delayCounter: 0,
+            spriteDelay: 5
+          })
+          enemiesBox.push(newEnemy)
+        }
+        if (chosen == 4) {
+          let newEnemy = new Enemy({
+            sprite: enemies[chosen - 1],
+            spriteWidth: enemiesWidth[chosen - 1],
+            spriteHeight: enemiesHeight[chosen - 1],
+            spriteFrame: 0,
+            spriteFrameAmount: 5,
+            delayCounter: 0,
+            spriteDelay: 5
+          })
+          enemiesBox.push(newEnemy)
+        }
+      }
+
+      for (let i = 0; i < numberOfEnemies; i++) {
+        enemyBirth()
+      }
+
+      function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height)
+
+        enemiesBox.forEach(enemy => {
+          enemy.draw()
+          enemy.update()
+        })
+        console.log(enemiesBox.length)
+
+        requestAnimationFrame(animate)
+      }
+      animate()
+    </script>
+  </body>
+</html>

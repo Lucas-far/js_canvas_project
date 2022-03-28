@@ -125,14 +125,5 @@ for (let i = 0; i < 100; i++) {
   console.log(i % staggerFrames)
 } */
 
-console.log(0 % 5)
-console.log(1 % 5)
-console.log(2 % 5)
-console.log(3 % 5)
-console.log(4 % 5)
-console.log(5 % 5)
-console.log(6 % 5)
-console.log(7 % 5)
-console.log(8 % 5)
-console.log(9 % 5)
-console.log(10 % 5)
+let moveDelay = Math.floor(Math.random() * (200 - 100) + 100)
+console.log(moveDelay)
