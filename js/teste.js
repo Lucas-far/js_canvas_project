@@ -125,5 +125,24 @@ for (let i = 0; i < 100; i++) {
   console.log(i % staggerFrames)
 } */
 
-let moveDelay = Math.floor(Math.random() * (200 - 100) + 100)
-console.log(moveDelay)
+/* let moveDelay = Math.floor(Math.random() * (200 - 100) + 100)
+console.log(moveDelay) */
+
+function getRndInteger(min, max, exact=false) {
+  if (exact) {
+    return Math.floor(Math.random() * (max - min + 1) ) + min;
+  } else {
+    return Math.random() * (max - min + 1) + min;
+  }
+  
+}
+
+/* for (let i = 0; i < 50; i++) {
+  console.log(getRndInteger(2, 7, exact=true))
+} */
+
+for (let i = 0; i < 50; i++) {
+  console.log(Math.random() * 400 / 3 + 20)
+}
+
+// console.log(400 / 3 + 20)
