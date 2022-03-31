@@ -141,8 +141,10 @@ function getRndInteger(min, max, exact=false) {
   console.log(getRndInteger(2, 7, exact=true))
 } */
 
-for (let i = 0; i < 50; i++) {
+/* for (let i = 0; i < 50; i++) {
   console.log(Math.random() * 400 / 3 + 20)
-}
+} */
 
 // console.log(400 / 3 + 20)
+
+console.log(Math.floor(Math.random() * 600 + 100))

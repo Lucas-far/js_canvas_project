@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Jogo 2</title>
+    <style>
+      body {
+        margin: 0;
+        background-color: #222;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="canvas"></canvas>
+    <script>
+      const canvas = document.querySelector('canvas')
+      const ctx = canvas.getContext('2d')
+
+      canvas.width = 1200
+      canvas.height = 600
+
+      let landscapes = []
+      let platforms = []
+      let playerDragon = undefined
+
+      let gameBackground = new Image()
+      gameBackground.src = './assets/background.png'
+
+      let hills = new Image()
+      hills.src = './assets/hills.png'
+
+      let surface = new Image()
+      surface.src = './assets/mario_world_surface.png'
+
+      let playerDragonSource = new Image()
+      playerDragonSource.src = './sprites/dragon.png'
+
+      const keys = {
+        right: { pressed: false },
+        left: { pressed: false }
+      }
+
+      class Landscape {
+        constructor({ x, y, image, width, height }) {
+          this.x = x
+          this.y = y
+
+          this.image = image
+          this.width = width
+          this.height = height
+
+          this.vx = 0
+          this.vy = 0
+        }
+
+        draw() {
+          ctx.drawImage(this.image, this.x, this.y, this.width, this.height)
+        }
+
+        update() {
+          // this.horizontalMove()
+        }
+      }
+
+      class Platform {
+        constructor({ x, y, image, width, height }) {
+          this.x = x
+          this.y = y
+          this.image = image
+          this.width = width
+          this.height = height
+          this.vx = 0
+          this.vy = 0
+        }
+
+        draw() {
+          ctx.drawImage(this.image, this.x, this.y, this.width, this.height)
+        }
+
+        horizontalMove() {
+          if (keys.right.pressed) {
+            platforms.forEach(platform => {
+              platform.x -= Math.random() * 5 + 2.5
+            })
+          }
+          if (keys.left.pressed) {
+            platforms.forEach(platform => {
+              platform.x += Math.random() * 5 + 2.5
+            })
+          }
+        }
+
+        update() {
+          this.horizontalMove()
+        }
+      }
+
+      class Character {
+        constructor({
+          // Uso em drawImage()
+          currentSprite,
+          srcWidth,
+          counter, // Uso em update()
+          heightFixed,
+          srcHeight,
+          whereX,
+          whereY,
+          canvasWidth,
+          canvasHeight,
+
+          // Delay
+          delayCounter,
+          delay,
+          spriteFrameAmount
+        }) {
+          this.currentSprite = currentSprite
+          this.srcWidth = srcWidth
+          this.counter = counter
+          this.heightFixed = heightFixed
+          this.srcHeight = srcHeight
+          this.whereX = whereX
+          this.whereY = whereY
+          this.canvasWidth = canvasWidth
+          this.canvasHeight = canvasHeight
+
+          this.delayCounter = delayCounter
+          this.delay = delay
+          this.spriteFrameAmount = spriteFrameAmount
+
+          this.vy = 0
+          this.vx = 0
+          this.weight = 1
+          this.speedHorizontal = Math.random() * 5 + 2.5
+        }
+
+        draw() {
+          ctx.drawImage(
+            this.currentSprite,
+            this.srcWidth * this.counter,
+            this.heightFixed,
+            this.srcWidth,
+            this.srcHeight,
+            this.whereX,
+            this.whereY,
+            this.canvasWidth,
+            this.canvasHeight
+          )
+        }
+
+        frameManagement() {
+          this.delayCounter++
+
+          if (this.delayCounter % this.delay == 0) {
+            if (this.counter < this.spriteFrameAmount) {
+              this.counter++
+            } else {
+              this.counter = 0
+            }
+          }
+        }
+
+        update() {
+          this.whereX += this.vx
+          this.whereY += this.vy
+
+          this.frameManagement()
+        }
+
+        landOnGround() {
+          // (this.height * int) = caso não queira pousar no chão (presença de superfície)
+          let surfaceHeight = 60
+          let groundPosition = canvas.height - this.canvasHeight - surfaceHeight
+          let gravitySmoother = 0.9
+
+          // Chegando ao "chão", zerar a vel. de queda
+          if (this.whereY > groundPosition) {
+            this.whereY = groundPosition
+            this.vy = 0
+          }
+          // Não chegando ao chão, continuar caindo
+          else {
+            this.vy += this.weight // vel. de queda vertical com base no peso
+            this.vy *= gravitySmoother // torna a queda menos agressiva, e evita uso reincidente da tecla W
+          }
+        }
+
+        roofCollision() {
+          // O topo da tela + altura do objeto
+          let roof = 0
+
+          // Alcançando o topo
+          if (this.whereY < roof) {
+            this.whereY = roof // iguala a altura do objeto a do teto
+            this.vy = 0 // queda imediata após saltar a tecla
+          }
+        }
+
+        leftCollision() {
+          if (keys.left.pressed && this.whereX < this.canvasWidth) {
+            this.whereX = 0 + this.canvasWidth / 2
+          }
+        }
+      }
+
+      function init() {
+        /* let landscapesSetup = [gameBackground, hills]
+
+        for (let i = 0; i < landscapesSetup.length; i++) {
+          landscapes.push(
+            new Landscape({ x: 0, y: 0, image: landscapesSetup[i] })
+          )
+        } */
+
+        landscapes = [
+          new Landscape({
+            x: 0,
+            y: 0,
+            image: gameBackground,
+            width: 11643,
+            height: canvas.height
+          }),
+          new Landscape({
+            x: 0,
+            y: 0,
+            image: hills,
+            width: 11643,
+            height: canvas.height
+          })
+        ]
+
+        platforms.push(
+          new Platform({
+            x: 0,
+            y: canvas.height - 60,
+            image: surface,
+            width: 499,
+            height: 60
+          })
+        )
+
+        for (let i = 1; i < 23; i++) {
+          platforms.push(
+            new Platform({
+              x: 499 * i,
+              y: canvas.height - 60,
+              image: surface,
+              width: 499,
+              height: 60
+            })
+          )
+        }
+
+        playerDragon = new Character({
+          currentSprite: playerDragonSource,
+          srcWidth: 939,
+          counter: 0,
+          heightFixed: 0,
+          srcHeight: 678,
+          whereX: 100,
+          whereY: canvas.height - 100,
+          canvasWidth: 100,
+          canvasHeight: 100,
+          delayCounter: 0,
+          delay: 5,
+          spriteFrameAmount: 3
+        })
+      }
+
+      function animate() {
+        ctx.fillRect(0, 0, canvas.width, canvas.height)
+
+        // Paisagens
+        landscapes.forEach(landscape => {
+          landscape.draw()
+          landscape.update()
+        })
+
+        // Plataformas
+        platforms.forEach(platform => {
+          platform.draw()
+          platform.update()
+        })
+
+        // Personagens
+        playerDragon.draw()
+        playerDragon.update()
+        playerDragon.landOnGround()
+        playerDragon.roofCollision()
+        playerDragon.leftCollision()
+
+        // AQUI
+        if (keys.right.pressed) {
+          playerDragon.vx = playerDragon.speedHorizontal
+        } else if (keys.left.pressed) {
+          playerDragon.vx = -playerDragon.speedHorizontal
+        } else {
+          playerDragon.vx = 0
+
+          if (keys.right.pressed) {
+            landscapes.forEach(landscape => {
+              landscape.x -= playerDragon.speedHorizontal
+            })
+            platforms.forEach(platform => {
+              platform.x -= playerDragon.speedHorizontal
+            })
+          }
+          if (keys.left.pressed) {
+            landscapes.forEach(landscape => {
+              landscape.x += playerDragon.speedHorizontal
+            })
+            platforms.forEach(platform => {
+              platform.x += playerDragon.speedHorizontal
+            })
+          }
+        }
+
+        /* if (keys.right.pressed) {
+          platforms.forEach(platform => {
+            platform.x -= 10
+          })
+          landscapes.forEach(landscape => {
+            landscape.x -= 10
+          })
+        }
+
+        if (keys.left.pressed && landscapes[0].x < 0) {
+          platforms.forEach(platform => {
+            platform.x += 10
+          })
+          landscapes.forEach(landscape => {
+            landscape.x += 10
+          })
+        } */
+
+        requestAnimationFrame(animate)
+      }
+
+      init()
+      animate()
+
+      addEventListener('keydown', event => {
+        // console.log(`${event.type}${event.key}`)
+
+        switch (event.key) {
+          case 'w':
+            break
+          case 's':
+            break
+          case 'a':
+            keys.left.pressed = true
+            break
+          case 'd':
+            keys.right.pressed = true
+            break
+          case 'q':
+            break
+        }
+      })
+
+      addEventListener('keyup', event => {
+        console.log(event.key)
+        switch (event.key) {
+          case 'a':
+            keys.left.pressed = false
+            break
+          case 'd':
+            keys.right.pressed = false
+
+            break
+        }
+      })
+    </script>
+  </body>
+</html>

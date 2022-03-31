@@ -247,7 +247,7 @@ function animate() {
   // Tornar a própria função um loop
   requestAnimationFrame(animate)
 
-  c.fillStyle = 'yellow'
+  // c.fillStyle = 'yellow'
   c.fillRect(0, 0, canvas.width, canvas.height)
   // posição horizontal, vertical, largura, altura
   // c.clearRect(0, 0, canvas.width, canvas.height)

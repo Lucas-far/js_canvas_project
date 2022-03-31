@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Jogo 3</title>
+    <style>
+      body {
+        margin: 0;
+        background-color: #222;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+      }
+    </style>
+
+    <canvas> </canvas>
+  </head>
+  <body>
+    <script>
+      const canvas = document.querySelector('canvas')
+      const c = canvas.getContext('2d')
+
+      canvas.width = 1200
+      canvas.height = 600
+
+      const gravity = 1.5
+      let scrollOffset = 0
+      const gap_normal = 100
+      const gap_large = 170
+      const standingFrame = 59
+      const walkingFrame = 29
+
+      const keys = {
+        right: { pressed: false },
+        left: { pressed: false }
+      }
+
+      let character = new Image()
+      let characterRunRight = new Image()
+      let characterToLeft = new Image()
+      let characterRunLeft = new Image()
+      let platformOne = new Image()
+      let platformTwo = new Image()
+      let surface = new Image()
+      let gameBackground = new Image()
+      let hills = new Image()
+
+      character.src = './assets/sprite_right.png'
+      characterRunRight.src = './assets/sprite_run_right.png'
+      characterToLeft.src = './assets/sprite_left.png'
+      characterRunLeft.src = './assets/sprite_run_left.png'
+      platformOne.src = './assets/platform_small.png'
+      platformTwo.src = './assets/platformSmallTall.png'
+      surface.src = './assets/mario_world_surface.png'
+      gameBackground.src = './assets/background.png'
+      hills.src = './assets/hills.png'
+
+      class Player {
+        constructor() {
+          this.position = { x: 100, y: 100 }
+          this.velocity = { x: 0, y: 0 }
+          this.behaviours = {
+            stand: {
+              right: character,
+              left: characterToLeft,
+              range: 177,
+              resize: 66
+            },
+            run: {
+              right: characterRunRight,
+              left: characterRunLeft,
+              range: 341,
+              resize: 127.875
+            }
+          }
+
+          this.currentSprite = this.behaviours.stand.right
+          this.currentCropRange = this.behaviours.stand.range
+          this.frameCounter = 0
+          this.speed = 10
+          this.width = 66
+          this.height = 150
+        }
+
+        draw() {
+          c.drawImage(
+            this.currentSprite,
+            this.currentCropRange * this.frameCounter,
+            0,
+            this.currentCropRange,
+            400,
+            this.position.x,
+            this.position.y,
+            this.width,
+            this.height
+          )
+        }
+
+        update() {
+          this.frameCounter++
+
+          if (
+            this.frameCounter > standingFrame &&
+            (this.currentSprite === this.behaviours.stand.right ||
+              this.currentSprite === this.behaviours.stand.left)
+          ) {
+            this.frameCounter = 0
+          } else if (
+            this.frameCounter > walkingFrame &&
+            (this.currentSprite === this.behaviours.run.right ||
+              this.currentSprite === this.behaviours.run.left)
+          ) {
+            this.frameCounter = 0
+          }
+
+          this.draw()
+
+          // Incrementações que simulam sua movimentação: vertical, horizontal
+          this.position.y += this.velocity.y
+          this.position.x += this.velocity.x
+
+          // Impedir jogador de sumir da tela (para baixo)
+          if (this.position.y + this.height + this.velocity.y <= canvas.height)
+            this.velocity.y += gravity
+        }
+      }
+
+      class Platform {
+        constructor({ x, y, image }) {
+          this.position = {
+            x,
+            y
+          }
+
+          this.image = image
+          this.width = image.width
+          this.height = image.height
+        }
+
+        draw() {
+          c.drawImage(this.image, this.position.x, this.position.y)
+        }
+      }
+
+      class GenericObject {
+        constructor({ x, y, image }) {
+          this.position = {
+            x,
+            y
+          }
+
+          this.image = image
+          this.width = image.width
+          this.height = image.height
+        }
+
+        draw() {
+          c.drawImage(this.image, this.position.x, this.position.y)
+        }
+      }
+
+      let player = new Player()
+      let platforms = []
+      let genericObjects = []
+
+      function init() {
+        player = new Player()
+
+        platforms = [
+          // Superfícies na parte de trás da superfície devem ser inseridas antes da superfície principal
+          new Platform({ x: surface.width + 50, y: 450, image: platformTwo }),
+
+          // superfície pioneira
+          new Platform({ x: 0, y: 570, image: surface }),
+
+          // superfície -> (posicionamento = largura)
+          new Platform({ x: surface.width, y: 570, image: surface }),
+
+          // superfície -> (com lacuna)
+          new Platform({
+            x: surface.width * 2 + gap_normal,
+            y: 570,
+            image: surface
+          }),
+
+          // y alterado para ficar mais alto (acima da superfície principal)
+          new Platform({
+            x: surface.width * 3 + gap_large,
+            y: 420,
+            image: platformTwo
+          }),
+
+          new Platform({ x: 170, y: 400, image: platformOne }),
+          new Platform({ x: 270, y: 450, image: platformOne })
+        ]
+
+        genericObjects = [
+          new GenericObject({ x: -1, y: -1, image: gameBackground }), // Imagem de fundo
+          new GenericObject({ x: -1, y: -1, image: hills }) // Montanhas/colinas
+        ]
+
+        scrollOffset = 0 // evitar que o jogador tenho acesso a esquerda após uma derrota
+      }
+
+      function animate() {
+        c.fillRect(0, 0, canvas.width, canvas.height)
+
+        genericObjects.forEach(genericObject => {
+          genericObject.draw()
+        })
+
+        platforms.forEach(platform => {
+          platform.draw()
+        })
+
+        player.update()
+
+        // Fazer o jogador andar para -> e impedir jogador de sair da tela ->
+        if (keys.right.pressed && player.position.x < 450) {
+          player.velocity.x = player.speed
+        }
+
+        // Impedir jogador de sair da tela <-
+        else if (
+          (keys.left.pressed && player.position.x > 70) ||
+          (keys.left.pressed && scrollOffset === 0 && player.position.x > 0)
+        ) {
+          player.velocity.x = -player.speed
+        }
+
+        // Se não estiver usando teclas para se mover: para o jogador
+        else {
+          player.velocity.x = 0
+
+          // Se pressionar ->: contar progresso e mover plataforma simultaneamente na mesma direção e propoção
+          if (keys.right.pressed) {
+            scrollOffset += player.speed
+
+            // Acompanhar jogador para direita
+            platforms.forEach(platform => {
+              platform.position.x -= player.speed
+            })
+
+            // Efeito paralaxe para a ->
+            genericObjects.forEach(genericObject => {
+              genericObject.position.x -= player.speed * 0.66
+            })
+          }
+
+          // Se pressionar <-: contar progresso e mover plataforma simultaneamente na mesma direção e propoção
+          else if (keys.left.pressed && scrollOffset > 0) {
+            scrollOffset -= player.speed
+
+            // Acompanhar jogador para esquerda
+            platforms.forEach(platform => {
+              platform.position.x += player.speed
+            })
+
+            // Efeito paralaxe para a <-
+            genericObjects.forEach(genericObject => {
+              genericObject.position.x += player.speed * 0.66
+            })
+          }
+        }
+
+        // Verificar progresso do cenário (7)
+        console.log(`Progresso atual ${scrollOffset}`)
+        if (scrollOffset > 2000) {
+          console.log('Fim')
+        }
+        // Posição vertical do jogador abaixo da menor posição vertical da janela do jogo
+        if (player.position.y > canvas.height) {
+          console.log('GAME OVER')
+          init()
+        }
+
+        /* Controle de colisão
+        && (1) = Subindo um obstáculo e pousando
+        && (2) = cair do lado direito após subir
+        && (3) = cair do lado esquerdo após subir
+        */
+        platforms.forEach(platform => {
+          if (
+            player.position.y + player.height <= platform.position.y &&
+            player.position.y + player.height + player.velocity.y >=
+              platform.position.y &&
+            player.position.x + player.width >= platform.position.x &&
+            player.position.x <= platform.position.x + platform.width
+          ) {
+            player.velocity.y = 0
+          }
+        })
+        console.log(player.position.x)
+
+        requestAnimationFrame(animate)
+      }
+
+      init()
+      animate()
+
+      addEventListener('keydown', event => {
+        switch (event.key) {
+          case 'w':
+            player.velocity.y -= 25
+            break
+          case 'a':
+            keys.left.pressed = true
+            player.currentSprite = player.behaviours.run.left
+            player.currentCropRange = player.behaviours.run.range
+            player.width = player.behaviours.run.resize
+            break
+          case 's':
+            break
+          case 'd':
+            keys.right.pressed = true
+            player.currentSprite = player.behaviours.run.right
+            player.currentCropRange = player.behaviours.run.range
+            player.width = player.behaviours.run.resize
+            break
+        }
+      })
+
+      addEventListener('keyup', event => {
+        switch (event.key) {
+          case 'w':
+            break
+          case 'a':
+            keys.left.pressed = false
+            player.currentSprite = player.behaviours.stand.left
+            player.currentCropRange = player.behaviours.stand.range
+            player.width = player.behaviours.stand.resize
+            break
+          case 's':
+            break
+          case 'd':
+            keys.right.pressed = false
+            player.currentSprite = player.behaviours.stand.right
+            player.currentCropRange = player.behaviours.stand.range
+            player.width = player.behaviours.stand.resize
+            break
+        }
+      })
+    </script>
+  </body>
+</html>
