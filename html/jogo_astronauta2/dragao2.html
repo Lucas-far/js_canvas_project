@@ -9,6 +9,13 @@
       body {
         margin: 0;
         background-color: #222;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+      }
+      canvas {
+        border: cyan solid 5px;
       }
     </style>
   </head>
@@ -22,6 +29,8 @@
       // [AQUI 4] Ponto de congelamento do personagem na tela -> (e de movimentação do cenário)
       // [AQUI 5] Ponto de congelamento do personagem na tela <- (e de movimentação do cenário)
       // [AQUI 6] Ponto de acionamento do cenário para mover em direção oposta ao do personagem
+      // 54:35 até 56:20 -> Configuração de ponto de encerramento de um cenário (Fim de fase)
+      // Substituição das plataformas em retângulos por imagens
       const canvas = document.querySelector('canvas')
       const ctx = canvas.getContext('2d')
 
@@ -33,6 +42,11 @@
         left: { pressed: false },
         trigger: { pressed: false }
       }
+
+      /* function imageSource(location) {
+        let imageObj = new Image()
+        imageObj.src = location
+      } */
 
       class Player {
         constructor() {
@@ -62,11 +76,11 @@
 
         horizontalSetup(speed, obstacle) {
           // 33:35 [AQUI 2] Jogador se mexe com base em "this.vx"
-          // 44:45 [AQUI 4] && this.x < canvas.width - this.width * 2
-          // 45:25 [AQUI 5] && this.x > 100 (não exceder o tamanho do personagem)
-          if (keys.right.pressed && this.x < canvas.width - this.width * 2) {
+          // 44:45 [AQUI 4] quanto maior o divisível, mais o jogador se apróximo da borda ->
+          // 45:25 [AQUI 5] quanto maior o divisível, mais o jogador se distancia da borda <-
+          if (keys.right.pressed && this.x < canvas.width / 1.4) {
             this.vx = speed
-          } else if (keys.left.pressed && this.x > this.width) {
+          } else if (keys.left.pressed && this.x > canvas.width / 4) {
             this.vx = -speed
           }
           // GATILHO PARA MOVIMENTAÇÂO DE CENÁRIO
@@ -124,10 +138,34 @@
             }
           })
         }
+
+        // NOVO
+        collisionHorizontal(obstacle, reboundBy) {
+          obstacle.forEach(index => {
+            if (
+              this.x + this.width >= index.x &&
+              this.x <= index.x + index.width &&
+              this.y + this.height >= index.y &&
+              this.y <= index.y + index.height
+            ) {
+              // Havendo colisão, o cenário precisa parar de mexer: "keys.trigger.pressed"
+              // Havendo colisão, o personagem precisa parar de mexer: "this.vx"
+              keys.trigger.pressed = false
+              if (keys.right.pressed) {
+                this.vx -= reboundBy
+              } else if (keys.left.pressed) {
+                this.vx += reboundBy
+              }
+
+              // console.log(this.x + this.width >= index.x, this.x <= index.x + index.width, this.y + this.height >= index.y, this.y <= index.y + index.height)
+            }
+          })
+        }
       }
 
       class Platform {
-        constructor({ x, y, width, height }) {
+        constructor({ image, x, y, width, height }) {
+          this.image = image
           this.x = x
           this.y = y
           this.width = width
@@ -135,65 +173,92 @@
         }
 
         draw() {
-          ctx.beginPath()
+          /* ctx.beginPath()
           ctx.fillStyle = 'white'
           ctx.fillRect(this.x, this.y, this.width, this.height)
-          ctx.fill()
+          ctx.fill() */
+          ctx.drawImage(this.image, this.x, this.y, this.width, this.height)
         }
       }
 
       const player = new Player()
       const platforms = []
 
+      // IMAGENS
+      let floatingPlatforms = new Image()
+      let surface = new Image()
+
+      // LOCALIZAÇÃO DAS IMAGENS
+      floatingPlatforms.src = './assets/platform_small.png'
+      surface.src = './assets/mario_world_surface.png'
+
       function init() {
-        
-        for (let i = 0; i < 10; i++) {
+        // SUPERFÍCIE PRIMÁRIA
+        platforms.push(
+          new Platform({
+            image: surface,
+            x: 0,
+            y: 499 + 61,
+            width: 499,
+            height: 61
+          })
+        )
+
+        // SUPERFÍCIES SECUNDÁRIAS
+        for (let i = 1; i <= 50; i++) {
           let newPlatform = new Platform({
-            x: Math.floor(Math.random() * canvas.width / 1.5 + 100),
-            y: Math.floor(Math.random() * canvas.height / 1.5 + 100),
-            width: Math.floor(Math.random() * 100 + 50),
-            height: 20
+            image: surface,
+            x: platforms[i - 1].x + Math.floor((Math.random() * 400 + 300)),
+            y: 499 + 61,
+            width: 499,
+            height: 61
           })
           platforms.push(newPlatform)
         }
+
+        // PLATAFORMAS FLUTUANTES
+        for (let i = 0; i < 10; i++) {
+          let newPlatform = new Platform({
+            image: floatingPlatforms,
+            x: Math.floor((Math.random() * canvas.width) / 1.5 + 100),
+            y: Math.floor((Math.random() * canvas.height) / 1.5 + 100),
+            width: 201,
+            height: 40
+          })
+          platforms.push(newPlatform)
+        }
+
+        // NOVO (testar colisão horizontal)
+        platforms.push(
+          new Platform({
+            image: floatingPlatforms,
+            x: 600,
+            y: canvas.height - 50,
+            width: 50,
+            height: 50
+          })
+        )
+        console.log(platforms)
       }
 
       function animate() {
         ctx.clearRect(0, 0, canvas.width, canvas.height)
-
-        player.draw()
 
         // platform.draw()
         platforms.forEach(platform => {
           platform.draw()
         })
 
+        // Criado após os recursos, pois: evitar sobreposição dos recursos sobre o personagem
+        player.draw()
         player.move()
         player.gravity((byValue = 1))
-        player.horizontalSetup((speed = 5))
+        player.horizontalSetup((speed = 2.5))
         player.landscapeMotion((obstacle = platforms), (byValue = 5))
         player.collisionBottom((obstacle = platforms))
 
-        console.log(platforms)
-
-        // 33:35 [AQUI 2]
-        /* if (keys.right.pressed) {
-          player.vx = 5
-        } else if (keys.left.pressed) {
-          player.vx = -5
-        } else {
-          player.vx = 0
-        } */
-
-        // 39:15 [AQUI 3]
-        /* if (
-          player.y + player.height <= platform.y &&
-          player.y + player.height + player.vy >= platform.y &&
-          player.x + player.width >= platform.x &&
-          player.x <= platform.x + platform.width
-        ) {
-          player.vy = 0
-        } */
+        // NOVO
+        player.collisionHorizontal((obstacle = platforms), (reboundBy = 20))
 
         requestAnimationFrame(animate)
       }
