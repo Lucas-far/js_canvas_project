@@ -147,4 +147,4 @@ function getRndInteger(min, max, exact=false) {
 
 // console.log(400 / 3 + 20)
 
-console.log(Math.floor(Math.random() * 600 + 100))
+console.log(48 % 7)

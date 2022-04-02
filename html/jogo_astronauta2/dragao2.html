@@ -43,11 +43,6 @@
         trigger: { pressed: false }
       }
 
-      /* function imageSource(location) {
-        let imageObj = new Image()
-        imageObj.src = location
-      } */
-
       class Player {
         constructor() {
           this.x = 100
@@ -116,10 +111,10 @@
 
           // 19:05 [AQUI 1]
           /* if (this.y + this.height + this.vy <= canvas.height) {
-            this.vy += 1
-          } else {
-            this.vy = 0
-          } */
+                  this.vy += 1
+                } else {
+                  this.vy = 0
+                } */
 
           // this.gravity(1)
           // this.horizontalSetup(5)
@@ -170,31 +165,112 @@
           this.y = y
           this.width = width
           this.height = height
+          this.newX = undefined
+          this.newY = undefined
         }
 
         draw() {
           /* ctx.beginPath()
-          ctx.fillStyle = 'white'
-          ctx.fillRect(this.x, this.y, this.width, this.height)
-          ctx.fill() */
+                ctx.fillStyle = 'white'
+                ctx.fillRect(this.x, this.y, this.width, this.height)
+                ctx.fill() */
           ctx.drawImage(this.image, this.x, this.y, this.width, this.height)
+        }
+
+        move() {
+          let delay = 0
+          let newDelay = Math.floor(Math.random() * (200 - 100) + 100)
+
+          // A cada 100 até 200 frames: mudar a posição em x e y
+          if (delay % newDelay === 0) {
+            this.newX = Math.random() * (canvas.width - this.width)
+            this.newY = Math.random() * (canvas.height - this.height)
+            console.log(this.newX, this.newY)
+          }
+
+          let dx = this.x - this.newX
+          let dy = this.y - this.newY
+
+          // Mover de forma homogênia (a divisão torna a transição muito menos devagar)
+          this.x -= dx / (newDelay * 2)
+          this.y -= dy / (newDelay * 2)
+        }
+      }
+
+      class Foe {
+        constructor({ image, widthList, widthList2 }) {
+          // 0,23 23,19 41,19
+          this.image = image
+          this.widthList = widthList
+          this.widthList2 = widthList2
+          this.modularCounter = 0
+          this.modular = 20
+          this.frameCounter = 0
+          this.frameAmount = this.widthList.length - 1
+        }
+
+        draw() {
+          ctx.drawImage(
+            this.image,
+            this.widthList[this.frameCounter],
+            0,
+            this.widthList2[this.frameCounter],
+            30,
+            200,
+            500,
+            9 * 2.5,
+            23 * 2.5
+          )
+        }
+        
+        update() {
+          this.modularCounter++
+
+          if (this.modularCounter % this.modular === 0) {
+            if (this.frameCounter < this.frameAmount) {
+              console.log(this.widthList[this.frameCounter])
+              this.frameCounter++
+            } else {
+              this.frameCounter = 0
+            }
+          }
+        }
+      }
+
+      function decisionMaking() {
+        let choice = [true, false]
+        let result = choice[Math.floor(Math.random() * 2)]
+        if (result) {
+          return true
+        } else {
+          return false
         }
       }
 
       const player = new Player()
+      const surfaces = []
       const platforms = []
+      const pipes = []
+      const hills = []
+      let wingedYellowKoopa = undefined
 
       // IMAGENS
       let floatingPlatforms = new Image()
       let surface = new Image()
+      let purplePipe = new Image()
+      let hillSmall = new Image()
+      let foeWingedYellowKoopa = new Image()
 
       // LOCALIZAÇÃO DAS IMAGENS
       floatingPlatforms.src = './assets/platform_small.png'
       surface.src = './assets/mario_world_surface.png'
+      purplePipe.src = './assets/purple_pipe_tr.png'
+      hillSmall.src = './assets/hill_small_tr.png'
+      foeWingedYellowKoopa.src = './assets/winged_yellow_koopa_tr.png'
 
       function init() {
-        // SUPERFÍCIE PRIMÁRIA
-        platforms.push(
+        // SUPERFÍCIE PRIMÁRIA (posição x usada como base nas secundárias)
+        surfaces.push(
           new Platform({
             image: surface,
             x: 0,
@@ -204,49 +280,114 @@
           })
         )
 
-        // SUPERFÍCIES SECUNDÁRIAS
+        // SUPERFÍCIES SECUNDÁRIAS (usam o valor base + um valor de distanciamento definido por "Math.random()")
         for (let i = 1; i <= 50; i++) {
-          let newPlatform = new Platform({
+          let newSurface = new Platform({
             image: surface,
-            x: platforms[i - 1].x + Math.floor((Math.random() * 400 + 300)),
+            x: surfaces[i - 1].x + Math.floor(Math.random() * 400 + 300),
             y: 499 + 61,
             width: 499,
             height: 61
           })
-          platforms.push(newPlatform)
+          surfaces.push(newSurface)
         }
 
-        // PLATAFORMAS FLUTUANTES
-        for (let i = 0; i < 10; i++) {
-          let newPlatform = new Platform({
+        // PLATAFORMA
+        platforms.push(
+          new Platform({
             image: floatingPlatforms,
             x: Math.floor((Math.random() * canvas.width) / 1.5 + 100),
-            y: Math.floor((Math.random() * canvas.height) / 1.5 + 100),
+            y: Math.floor((Math.random() * canvas.height) / 3 + 100),
+            width: 201,
+            height: 40
+          })
+        )
+
+        // PLATAFORMAS SECUNDÁRIAS
+        for (let i = 1; i <= 50; i++) {
+          let newPlatform = new Platform({
+            image: floatingPlatforms,
+            x: platforms[i - 1].x + Math.floor(Math.random() * 400 + 300),
+            y: Math.random() * 300 + 100,
             width: 201,
             height: 40
           })
           platforms.push(newPlatform)
         }
 
-        // NOVO (testar colisão horizontal)
-        platforms.push(
+        // CANO PRIMÁRIO
+        pipes.push(
           new Platform({
-            image: floatingPlatforms,
-            x: 600,
-            y: canvas.height - 50,
-            width: 50,
-            height: 50
+            image: purplePipe,
+            x: Math.random() * canvas.width,
+            y: 499,
+            width: 44,
+            height: 64
           })
         )
-        console.log(platforms)
+
+        // CANOS SECUNDÁRIOS
+        for (let i = 1; i <= 50; i++) {
+          let newPipe = new Platform({
+            image: purplePipe,
+            x: pipes[i - 1].x + Math.floor(Math.random() * canvas.width + 300),
+            y: 499,
+            width: 44,
+            height: 64
+          })
+          pipes.push(newPipe)
+        }
+
+        // COLINA PEQUENA
+        hills.push(
+          new Platform({
+            image: hillSmall,
+            x: 400,
+            y: canvas.height - 49 * 3,
+            width: 64 * 3,
+            height: 49 * 3
+          })
+        )
+
+        // COLINAS PEQUENAS SECUNDÁRIAS
+        for (let i = 1; i <= 50; i++) {
+          let newSmallHill = new Platform({
+            image: hillSmall,
+            x: hills[i - 1].x + Math.floor(Math.random() * canvas.width + 300),
+            y: canvas.height - 49 * 3 + Math.random() * 20 - 20,
+            width: hills[i - 1].width,
+            height: hills[i - 1].height
+          })
+          hills.push(newSmallHill)
+        }
+      
+        wingedYellowKoopa = new Foe({image: foeWingedYellowKoopa, widthList: [0, 23, 41], widthList2: [23, 19, 19]})
       }
+
+      let pipeDelayCounter = 0
+      let pipeEndPoint = 15
+      let pipeCounter = 0
+      let pipeEndPoint2 = 5
 
       function animate() {
         ctx.clearRect(0, 0, canvas.width, canvas.height)
 
-        // platform.draw()
         platforms.forEach(platform => {
           platform.draw()
+        })
+
+        hills.forEach(hill => {
+          hill.draw()
+        })
+
+        // NA FRENTE DAS COLINAS
+        pipes.forEach(pipe => {
+          pipe.draw()
+        })
+
+        // platform.draw()
+        surfaces.forEach(surface => {
+          surface.draw()
         })
 
         // Criado após os recursos, pois: evitar sobreposição dos recursos sobre o personagem
@@ -254,11 +395,48 @@
         player.move()
         player.gravity((byValue = 1))
         player.horizontalSetup((speed = 2.5))
+
         player.landscapeMotion((obstacle = platforms), (byValue = 5))
         player.collisionBottom((obstacle = platforms))
+        player.collisionHorizontal((obstacle = platforms), (reboundBy = 20)) // NOVO
 
-        // NOVO
-        player.collisionHorizontal((obstacle = platforms), (reboundBy = 20))
+        player.landscapeMotion((obstacle = surfaces), (byValue = 5))
+        player.collisionBottom((obstacle = surfaces))
+        player.collisionHorizontal((obstacle = surfaces), (reboundBy = 20)) // NOVO
+
+        player.landscapeMotion((obstacle = pipes), (byValue = 5))
+        player.collisionBottom((obstacle = pipes))
+        player.collisionHorizontal((obstacle = pipes), (reboundBy = 20)) // NOVO
+
+        player.landscapeMotion((obstacle = hills), (byValue = 5))
+        player.collisionBottom((obstacle = hills))
+        player.collisionHorizontal((obstacle = hills), (reboundBy = 20)) // NOVO
+
+        wingedYellowKoopa.draw()
+        wingedYellowKoopa.update()
+
+        /* console.log(platforms)
+              console.log(player.x) */
+
+        // CONTROLE DE MOVIMENTAÇÃO DE CANOS (SETUP FORA DA FUNÇÃO)
+        pipeDelayCounter++
+        if (pipeDelayCounter % pipeEndPoint === 0) {
+          if (pipeCounter < pipeEndPoint2) {
+            pipeCounter++
+            pipes.forEach(index => {
+              let choice = [true, false]
+              let result = choice[Math.floor(Math.random() * 2)]
+              if (result) {
+                index.x += Math.random() * 25 - 25
+              } else {
+                index.x -= Math.random() * 25 - 25
+              }
+            })
+          } else {
+            pipeCounter = 0
+          }
+        }
+        // console.log(pipeCounter)
 
         requestAnimationFrame(animate)
       }
