@@ -36,11 +36,29 @@
 
       canvas.width = 1200
       canvas.height = 600
+      
+      let progress = 0
+      let lives = 3
 
       const keys = {
         right: { pressed: false },
         left: { pressed: false },
-        trigger: { pressed: false }
+        trigger: { pressed: false },
+        game: { reset: false }
+      }
+
+      class Landscape {
+        constructor({ image, x, y, width, height }) {
+          this.image = image
+          this.x = x
+          this.y = y
+          this.width = width
+          this.height = height
+        }
+
+        draw() {
+          ctx.drawImage(this.image, this.x, this.y, this.width, this.height)
+        }
       }
 
       class Player {
@@ -69,6 +87,22 @@
           }
         }
 
+        fallDown(byValue) {
+          if (this.y + this.height + this.vy <= canvas.height) {
+            this.vy += byValue
+          }
+        }
+
+        fail() {
+          // 01:26:50
+          // Na presença de uma plataforma, "this.y" é sempre < que "canvas.height"
+          // Na ausência de uma plataforma, "this.y" pode ficar > que "canvas.height"
+          if (this.y > canvas.height) {
+            lives -= 1
+            init()
+          }
+        }
+
         horizontalSetup(speed, obstacle) {
           // 33:35 [AQUI 2] Jogador se mexe com base em "this.vx"
           // 44:45 [AQUI 4] quanto maior o divisível, mais o jogador se apróximo da borda ->
@@ -77,7 +111,7 @@
             this.vx = speed
           } else if (keys.left.pressed && this.x > canvas.width / 4) {
             this.vx = -speed
-          }
+          } 
           // GATILHO PARA MOVIMENTAÇÂO DE CENÁRIO
           else {
             this.vx = 0
@@ -198,31 +232,51 @@
       }
 
       class Foe {
-        constructor({ image, widthList, widthList2 }) {
-          // 0,23 23,19 41,19
+        constructor({
+          image,
+          widthList,
+          frameCounter,
+          fixedHeight,
+          widthList2,
+          srcHeight,
+          whereX,
+          whereY,
+          canvasWidth,
+          canvasHeight,
+          modularCounter,
+          modular,
+          frameAmount
+        }) {
           this.image = image
           this.widthList = widthList
+          this.frameCounter = frameCounter
+          this.fixedHeight = fixedHeight
           this.widthList2 = widthList2
-          this.modularCounter = 0
-          this.modular = 20
-          this.frameCounter = 0
-          this.frameAmount = this.widthList.length - 1
+          this.srcHeight = srcHeight
+          this.whereX = whereX
+          this.whereY = whereY
+          this.canvasWidth = canvasWidth
+          this.canvasHeight = canvasHeight
+          this.modularCounter = modularCounter
+          this.modular = modular
+          this.frameAmount = frameAmount
+          // this.frameAmount = this.widthList.length - 1
         }
 
         draw() {
           ctx.drawImage(
             this.image,
             this.widthList[this.frameCounter],
-            0,
+            this.fixedHeight,
             this.widthList2[this.frameCounter],
-            30,
-            200,
-            500,
-            9 * 2.5,
-            23 * 2.5
+            this.srcHeight,
+            this.whereX,
+            this.whereY,
+            this.canvasWidth,
+            this.canvasHeight
           )
         }
-        
+
         update() {
           this.modularCounter++
 
@@ -247,28 +301,90 @@
         }
       }
 
-      const player = new Player()
-      const surfaces = []
-      const platforms = []
-      const pipes = []
-      const hills = []
-      let wingedYellowKoopa = undefined
-
       // IMAGENS
+      let backgroundDarkCyan = new Image()
+      let backgroundHills = new Image()
       let floatingPlatforms = new Image()
       let surface = new Image()
       let purplePipe = new Image()
       let hillSmall = new Image()
-      let foeWingedYellowKoopa = new Image()
 
       // LOCALIZAÇÃO DAS IMAGENS
+      backgroundDarkCyan.src = './assets/background.png'
+      backgroundHills.src = './assets/hills.png'
       floatingPlatforms.src = './assets/platform_small.png'
       surface.src = './assets/mario_world_surface.png'
       purplePipe.src = './assets/purple_pipe_tr.png'
       hillSmall.src = './assets/hill_small_tr.png'
-      foeWingedYellowKoopa.src = './assets/winged_yellow_koopa_tr.png'
+
+      let player = new Player()
+      let landscapes = []
+      let surfaces = []
+      let platforms = []
+      let pipes = []
+      let hills = []
+
+      /* ========================================================================================
+      // INIMIGOS
+      const liuKang = []
+      let liuKangForward = new Image()
+      let liuKangBackwards = new Image()
+      liuKangForward.src = './assets/liu_kang_right.png'
+      liuKangBackwards.src = './assets/liu_kang_left.png'
+      ======================================================================================== */
+      
+      // Relacionamento: Player.fail()
+      function lifePanel() {
+        if (lives === 0) {
+          player = new Player()
+          landscapes = []
+          surfaces = []
+          platforms = []
+          pipes = []
+          hills = []
+
+          ctx.fillStyle = 'red'
+          ctx.font = '100px georgia'
+          ctx.fillText('GAME OVER', 200, 200)
+        } else {
+          ctx.fillStyle = 'cyan'
+          ctx.font = '25px georgia'
+          ctx.fillText('Vidas: ' + lives, 50, 50)
+        }
+      }
 
       function init() {
+        player = new Player()
+        landscapes = []
+        surfaces = []
+        platforms = []
+        pipes = []
+        hills = []
+
+        player = new Player()
+
+        // PLANO DE FUNDO: GENÉRICO
+        landscapes.push(
+          new Landscape({
+            image: backgroundDarkCyan,
+            x: 0,
+            y: 0,
+            width: 11643,
+            height: 732
+          })
+        )
+
+        // PLANO DE FUNDO: PLANÍCIES
+        landscapes.push(
+          new Landscape({
+            image: backgroundHills,
+            x: 0,
+            y: 0,
+            width: 7545,
+            height: 592
+          })
+        )
+
         // SUPERFÍCIE PRIMÁRIA (posição x usada como base nas secundárias)
         surfaces.push(
           new Platform({
@@ -360,8 +476,26 @@
           })
           hills.push(newSmallHill)
         }
-      
-        wingedYellowKoopa = new Foe({image: foeWingedYellowKoopa, widthList: [0, 23, 41], widthList2: [23, 19, 19]})
+
+        /* ========================================================================================
+        liuKang.push(
+          new Foe({
+            image: liuKangForward,
+            widthList: [0, 47, 91, 134, 177, 220, 263],
+            frameCounter: 0,
+            fixedHeight: 0,
+            widthList2: [47, 44, 43, 43, 43, 43, 43],
+            srcHeight: 100,
+            whereX: 350,
+            whereY: 460,
+            canvasWidth: 45,
+            canvasHeight: 100,
+            modularCounter: 0,
+            modular: 10,
+            frameAmount: 6
+          })
+        )
+        ======================================================================================== */
       }
 
       let pipeDelayCounter = 0
@@ -369,8 +503,26 @@
       let pipeCounter = 0
       let pipeEndPoint2 = 5
 
+      /* ========================================================================================
+      let platformModularCounter = 0
+      let platformModular = 25
+      let platformBeginning = 0
+      let platformClosure = 7
+      ======================================================================================== */
+
+      /* ========================================================================================
+      let liuKangDelayCounter = 0
+      let liuKangEndPoint = 15
+      let liuKangCounter = 0
+      let liuKangEndPoint2 = 5
+      ======================================================================================== */
+
       function animate() {
         ctx.clearRect(0, 0, canvas.width, canvas.height)
+
+        landscapes.forEach(landscape => {
+          landscape.draw()
+        })
 
         platforms.forEach(platform => {
           platform.draw()
@@ -385,44 +537,96 @@
           pipe.draw()
         })
 
-        // platform.draw()
+        /* ========================================================================================
+        liuKang.forEach(index => {
+          index.draw()
+          index.update()
+        })
+        ======================================================================================== */
+
         surfaces.forEach(surface => {
           surface.draw()
         })
 
-        // Criado após os recursos, pois: evitar sobreposição dos recursos sobre o personagem
+        // Criado após a superfície, pois: evitar sobreposição dos recursos sobre o personagem
         player.draw()
+
         player.move()
-        player.gravity((byValue = 1))
+
+        /* ========================================================================================
+        // Em que contexto usar? Em jogos ou cenários que o jogador não precisa cair
+        // player.gravity((byValue = 1))
+        ======================================================================================== */
+
+        // Em que contexto usar? Em jogos ou cenários que o jogador pode cair
+        player.fallDown((byValue = 1))
+
         player.horizontalSetup((speed = 2.5))
 
+        player.landscapeMotion((obstacle = landscapes), (byValue = 3 * 0.66))
         player.landscapeMotion((obstacle = platforms), (byValue = 5))
-        player.collisionBottom((obstacle = platforms))
-        player.collisionHorizontal((obstacle = platforms), (reboundBy = 20)) // NOVO
-
-        player.landscapeMotion((obstacle = surfaces), (byValue = 5))
-        player.collisionBottom((obstacle = surfaces))
-        player.collisionHorizontal((obstacle = surfaces), (reboundBy = 20)) // NOVO
-
-        player.landscapeMotion((obstacle = pipes), (byValue = 5))
-        player.collisionBottom((obstacle = pipes))
-        player.collisionHorizontal((obstacle = pipes), (reboundBy = 20)) // NOVO
-
         player.landscapeMotion((obstacle = hills), (byValue = 5))
+        player.landscapeMotion((obstacle = pipes), (byValue = 5))
+        player.landscapeMotion((obstacle = surfaces), (byValue = 5))
+
+        player.collisionBottom((obstacle = platforms))
         player.collisionBottom((obstacle = hills))
-        player.collisionHorizontal((obstacle = hills), (reboundBy = 20)) // NOVO
+        player.collisionBottom((obstacle = pipes))
+        player.collisionBottom((obstacle = surfaces))
 
-        wingedYellowKoopa.draw()
-        wingedYellowKoopa.update()
+        player.collisionHorizontal((obstacle = platforms), (reboundBy = 20))
+        player.collisionHorizontal((obstacle = hills), (reboundBy = 20))
+        player.collisionHorizontal((obstacle = pipes), (reboundBy = 20))
+        player.collisionHorizontal((obstacle = surfaces), (reboundBy = 20))
 
-        /* console.log(platforms)
-              console.log(player.x) */
+        player.fail()
+        lifePanel()
 
+        /* ========================================================================================
+        player.landscapeMotion((obstacle = liuKang), (byValue = 5))
+        player.collisionBottom((obstacle = liuKang))
+        player.collisionHorizontal((obstacle = liuKang), (reboundBy = 20)) // NOVO
+        ======================================================================================== */
+
+        /* ========================================================================================
+        // CONTROLE DE MOVIMENTAÇÃO DE PLATAFORMAS
+        platformModularCounter++
+        if (platformModularCounter % platformModular === 0) {
+          if (platformBeginning < platformClosure) {
+            let choice = [true, false]
+            let result = choice[Math.floor(Math.random() * 2)]
+
+            platforms.forEach(index => {
+              index.newX = Math.floor(
+                Math.random() * canvas.width - index.width
+              )
+              index.newY = Math.floor(
+                Math.random() * canvas.height - index.height
+              )
+
+              let dx = index.newX
+              let dy = index.newY
+
+              if (result) {
+                index.x -= dx / (platformModular * 2)
+                index.y -= dy / (platformModular * 2)
+              } else {
+                index.x += dx / (platformModular * 2)
+                index.y += dy / (platformModular * 2)
+              }
+            })
+            platformBeginning++
+          } else {
+            platformBeginning = 0
+          }
+        }
+        ======================================================================================== /*
+
+        /* ========================================================================================
         // CONTROLE DE MOVIMENTAÇÃO DE CANOS (SETUP FORA DA FUNÇÃO)
         pipeDelayCounter++
         if (pipeDelayCounter % pipeEndPoint === 0) {
           if (pipeCounter < pipeEndPoint2) {
-            pipeCounter++
             pipes.forEach(index => {
               let choice = [true, false]
               let result = choice[Math.floor(Math.random() * 2)]
@@ -431,12 +635,36 @@
               } else {
                 index.x -= Math.random() * 25 - 25
               }
+              pipeCounter++
             })
           } else {
             pipeCounter = 0
           }
         }
         // console.log(pipeCounter)
+        ======================================================================================== */
+
+        /* ========================================================================================
+        liuKangDelayCounter++
+        if (liuKangDelayCounter % liuKangEndPoint === 0) {
+          if (liuKangCounter < liuKangEndPoint2) {
+            liuKang.forEach(index => {
+              let choice = [true, false]
+              let result = choice[Math.floor(Math.random() * 2)]
+              if (result) {
+                liuKang[0].image = liuKangForward
+                index.whereX += Math.random() * 25 - 25
+              } else {
+                liuKang[0].image = liuKangBackwards
+                index.whereX -= Math.random() * 25 - 25
+              }
+              liuKangCounter++
+            })
+          } else {
+            liuKangCounter = 0
+          }
+        }
+        ======================================================================================== */
 
         requestAnimationFrame(animate)
       }
@@ -448,6 +676,7 @@
         switch (event.key) {
           case 'w':
             // [-= é usado pois há gravidade garantindo a queda]
+
             player.vy -= 20
             break
           case 'd':
