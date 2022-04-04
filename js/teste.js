@@ -147,4 +147,5 @@ function getRndInteger(min, max, exact=false) {
 
 // console.log(400 / 3 + 20)
 
-console.log(48 % 7)
+console.log(1200 / 1.4)
+console.log(1200 / 4)

@@ -36,8 +36,7 @@
 
       canvas.width = 1200
       canvas.height = 600
-      
-      let progress = 0
+
       let lives = 3
 
       const keys = {
@@ -63,8 +62,8 @@
 
       class Player {
         constructor() {
-          this.x = 100
-          this.y = 100
+          this.x = 50
+          this.y = 500
           this.vx = 0
           this.vy = 1
           this.width = 30
@@ -111,7 +110,7 @@
             this.vx = speed
           } else if (keys.left.pressed && this.x > canvas.width / 4) {
             this.vx = -speed
-          } 
+          }
           // GATILHO PARA MOVIMENTAÇÂO DE CENÁRIO
           else {
             this.vx = 0
@@ -317,7 +316,7 @@
       purplePipe.src = './assets/purple_pipe_tr.png'
       hillSmall.src = './assets/hill_small_tr.png'
 
-      let player = new Player()
+      let player = undefined
       let landscapes = []
       let surfaces = []
       let platforms = []
@@ -332,20 +331,18 @@
       liuKangForward.src = './assets/liu_kang_right.png'
       liuKangBackwards.src = './assets/liu_kang_left.png'
       ======================================================================================== */
-      
+
       // Relacionamento: Player.fail()
       function lifePanel() {
         if (lives === 0) {
-          player = new Player()
-          landscapes = []
-          surfaces = []
-          platforms = []
-          pipes = []
-          hills = []
+          ctx.fillStyle = 'rgba(255,255,255)'
+          ctx.fillRect(0, 0, canvas.width, canvas.height)
 
-          ctx.fillStyle = 'red'
+          ctx.fillStyle = 'blue'
           ctx.font = '100px georgia'
-          ctx.fillText('GAME OVER', 200, 200)
+          ctx.fillText('GAME OVER', 100, 100)
+
+          ctx.fill()
         } else {
           ctx.fillStyle = 'cyan'
           ctx.font = '25px georgia'
@@ -360,8 +357,6 @@
         platforms = []
         pipes = []
         hills = []
-
-        player = new Player()
 
         // PLANO DE FUNDO: GENÉRICO
         landscapes.push(
@@ -579,8 +574,25 @@
         player.collisionHorizontal((obstacle = pipes), (reboundBy = 20))
         player.collisionHorizontal((obstacle = surfaces), (reboundBy = 20))
 
+        // Resetar cenário ao cair
         player.fail()
+
+        // Penalidade
         lifePanel()
+
+        // IMPEDIR JOGADOR DE DEIXAR A TELA <-
+        let screenStart = landscapes[0].x
+        if (
+          (screenStart > 0 && keys.right.pressed === false) ||
+          (screenStart > 0 && keys.left.pressed === false)
+        ) {
+          console.log('INÍCIO')
+          player.landscapeMotion((obstacle = landscapes), (byValue = -3 * 0.66))
+          player.landscapeMotion((obstacle = platforms), (byValue = -5))
+          player.landscapeMotion((obstacle = hills), (byValue = -5))
+          player.landscapeMotion((obstacle = pipes), (byValue = -5))
+          player.landscapeMotion((obstacle = surfaces), (byValue = -5))
+        }
 
         /* ========================================================================================
         player.landscapeMotion((obstacle = liuKang), (byValue = 5))
