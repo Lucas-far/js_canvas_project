@@ -393,6 +393,53 @@
             }
           }
         }
+
+        go(image, reference, action) {
+          if (action === 'walk_right') {
+            this.image = image
+            this.widthList = reference.walkRight.widthList
+            this.widthList2 = reference.walkRight.widthList2
+            this.srcHeight = reference.walkRight.srcHeight
+            this.frameAmount = reference.walkRight.frameAmount
+          } else if (action === 'walk_left') {
+            this.image = image
+            this.widthList = reference.walkLeft.widthList
+            this.widthList2 = reference.walkLeft.widthList2
+            this.srcHeight = reference.walkLeft.srcHeight
+            this.frameAmount = reference.walkLeft.frameAmount
+          } else if (action === 'idle_right') {
+            this.image = image
+            this.widthList = reference.idleRight.widthList
+            this.widthList2 = reference.idleRight.widthList2
+            this.srcHeight = reference.idleRight.srcHeight
+            this.frameAmount = reference.idleRight.frameAmount
+          } else if (action === 'idle_left') {
+            this.image = image
+            this.widthList = reference.idleLeft.widthList
+            this.widthList2 = reference.idleLeft.widthList2
+            this.srcHeight = reference.idleLeft.srcHeight
+            this.frameAmount = reference.idleLeft.frameAmount
+          } else if (action === 'jump') {
+            this.image = image
+            this.widthList = reference.spin.widthList
+            this.widthList2 = reference.spin.widthList2
+            this.srcHeight = reference.spin.srcHeight
+            this.frameAmount = reference.spin.frameAmount
+          } else if (action === 'jump_right') {
+            this.image = image
+            this.widthList = reference.jumpRight.widthList
+            this.widthList2 = reference.jumpRight.widthList2
+            this.srcHeight = reference.jumpRight.srcHeight
+            this.frameAmount = reference.jumpRight.frameAmount
+          }
+          else if (action === 'jump_right_edited') {
+            this.image = image
+            this.widthList = reference.jumpRightEdited.widthList
+            this.widthList2 = reference.jumpRightEdited.widthList2
+            this.srcHeight = reference.jumpRightEdited.srcHeight
+            this.frameAmount = reference.jumpRightEdited.frameAmount
+          }
+        }
       }
 
       function decisionMaking() {
@@ -404,12 +451,26 @@
           return false
         }
       }
-      
+
       // JOGADOR
       let wolf = new Image()
       wolf.src = './assets/wolf_idle_right_tr.png'
+      let wolfIdleLeft = new Image()
+      wolfIdleLeft.src = './assets/wolf_idle_left_tr.png'
       let wolfWalkRight = new Image()
       wolfWalkRight.src = './assets/wolf_walk_right_tr.png'
+      let wolfWalkLeft = new Image()
+      wolfWalkLeft.src = './assets/wolf_walk_left_tr.png'
+      let wolfSpin = new Image()
+      wolfSpin.src = './assets/spin_rainbow_tr.png'
+      let wolfJumpRight = new Image()
+      wolfJumpRight.src = './assets/wolf_jump_right_tr.png'
+      let wolfJumpRightEdited = new Image()
+      wolfJumpRightEdited.src = './assets/wolf_jump_right_edited_tr.png'
+
+      // HABILIDADES
+      let koopaRedShell = new Image()
+      koopaRedShell.src = './assets/koopa_red_shell_tr.png'
 
       // RECURSOS VIZUAIS
       let backgroundDarkCyan = new Image()
@@ -431,8 +492,61 @@
       let hillSmall = new Image()
       hillSmall.src = './assets/hill_small_tr.png'
 
+      let wolfSetup = {
+        idleRight: {
+          widthList: [0, 184, 365, 542, 715, 892, 1074],
+          widthList2: [183, 183, 177, 171, 174, 180, 185],
+          srcHeight: 175,
+          frameAmount: 6
+        },
+
+        idleLeft: {
+          widthList: [0, 185, 367, 544, 717, 894, 1074],
+          widthList2: [187, 183, 177, 173, 177, 181, 185],
+          srcHeight: 175,
+          frameAmount: 6
+        },
+
+        walkRight: {
+          widthList: [0, 172, 350, 510, 685, 860, 1033, 1205.7, 1380],
+          widthList2: [171, 169, 160, 175, 175, 175, 175, 175, 175],
+          srcHeight: 161,
+          frameAmount: 8
+        },
+        
+        // INVERTER O SPRITE DA DIREITA NO PAINT + INVERTER A ORDEM DOS FRAMES (CORRIGIR MOVIMENTO INVERSO)
+        walkLeft: {
+          // widthList: [0, 172, 344, 515, 690, 865, 1037, 1208, 1380],
+          widthList: [1380, 1208, 1037, 865, 690, 515, 344, 172, 0],
+          // widthList2: [171, 169, 174, 175, 175, 175, 172, 172, 172],
+          widthList2: [172, 172, 172, 175, 175, 175, 174, 169, 171],
+          srcHeight: 161,
+          frameAmount: 8
+        },
+      
+        jumpRight: {
+          widthList: [0, 189, 378, 567, 755, 945, 1135],
+          widthList2: [189, 189, 189, 189, 189, 189, 189],
+          srcHeight: 188,
+          frameAmount: 6
+        },
+
+        jumpRightEdited: {
+          widthList: [0, 178, 355, 531, 709, 886, 1064, 1242],
+          widthList2: [178, 178, 178, 178, 178, 178, 178, 178],
+          srcHeight: 176,
+          frameAmount: 7
+        },
+        
+        spin: {
+          widthList: [0, 191, 375, 563, 754, 940, 1126],
+          widthList2: [191, 186, 186, 186, 186, 186, 193],
+          srcHeight: 189,
+          frameAmount: 6
+        }
+      }
+
       let charWolf = undefined
-      let player = undefined
       let landscapes = []
       let surfaces = []
       let platforms = []
@@ -468,34 +582,18 @@
         // Sobre a lista 1: No paint, é possível obter as coordenadas com o ponteiro em cada extremidade da imagem
         charWolf = new Foe({
           image: wolf,
-          widthList: [0, 184, 365, 542, 715, 892, 1074],
+          widthList: wolfSetup.idleRight.widthList,
           frameCounter: 0,
           fixedHeight: 0,
-          widthList2: [183, 183, 177, 171, 174, 180, 185],
-          srcHeight: 175,
+          widthList2: wolfSetup.idleRight.widthList2,
+          srcHeight: wolfSetup.idleRight.srcHeight,
           whereX: 100,
           whereY: 400,
           canvasWidth: 70,
           canvasHeight: 70,
           modularCounter: 0,
-          modular: 10,
-          frameAmount: 6
-        })
-
-        charWolfWalkRight = new Foe({
-          image: wolfWalkRight,
-          widthList: [0, 172, 350, 510, 685, 860, 1033, 1205.7, 1380],
-          frameCounter: 0,
-          fixedHeight: 0,
-          widthList2: [171, 169, 160, 175, 175, 175, 175, 175, 175],
-          srcHeight: 161,
-          whereX: 100,
-          whereY: 400,
-          canvasWidth: 70,
-          canvasHeight: 70,
-          modularCounter: 0,
-          modular: 10,
-          frameAmount: 8
+          modular: 5,
+          frameAmount: wolfSetup.idleRight.frameAmount
         })
 
         // PLANO DE FUNDO: GENÉRICO
@@ -535,7 +633,7 @@
         for (let i = 1; i <= 50; i++) {
           let newSurface = new Platform({
             image: surface,
-            x: surfaces[i - 1].x + Math.floor(Math.random() * 400 + 300),
+            x: surfaces[i - 1].x + Math.floor(Math.random() * 420 + 320),
             y: 499 + 61,
             width: 499,
             height: 61
@@ -617,7 +715,7 @@
       let pipeEndPoint = 15
       let pipeCounter = 0
       let pipeEndPoint2 = 5
-      
+
       // RECURSOS DE TESTE DA FUNÇÃO TESTE DE CRIAÇÃO DE SPRITES "wolfDraw()" (usado em animate())
       let test2 = [0, 184, 365, 542, 715, 892, 1074]
       let test3 = [183, 183, 177, 171, 174, 180, 185]
@@ -664,7 +762,6 @@
           hill.draw()
         })
 
-        // NA FRENTE DAS COLINAS
         pipes.forEach(pipe => {
           pipe.draw()
         })
@@ -672,57 +769,6 @@
         surfaces.forEach(surface => {
           surface.draw()
         })
-
-        // Criado após a superfície, pois: evitar sobreposição dos recursos sobre o personagem
-        // player.draw()
-
-        // player.move()
-
-        /* ========================================================================================
-        // Em que contexto usar? Em jogos ou cenários que o jogador não precisa cair
-        // player.gravity((byValue = 1))
-        ======================================================================================== */
-
-        // Em que contexto usar? Em jogos ou cenários que o jogador pode cair
-        // player.fallDown((byValue = 1))
-
-        // player.horizontalSetup((speed = 2.5))
-
-        // player.landscapeMotion((obstacle = landscapes), (byValue = 3 * 0.66))
-        // player.landscapeMotion((obstacle = platforms), (byValue = 5))
-        // player.landscapeMotion((obstacle = hills), (byValue = 5))
-        // player.landscapeMotion((obstacle = pipes), (byValue = 5))
-        // player.landscapeMotion((obstacle = surfaces), (byValue = 5))
-
-        // player.collisionBottom((obstacle = platforms))
-        // player.collisionBottom((obstacle = hills))
-        // player.collisionBottom((obstacle = pipes))
-        // player.collisionBottom((obstacle = surfaces))
-
-        // player.collisionHorizontal((obstacle = platforms), (reboundBy = 20))
-        // player.collisionHorizontal((obstacle = hills), (reboundBy = 20))
-        // player.collisionHorizontal((obstacle = pipes), (reboundBy = 20))
-        // player.collisionHorizontal((obstacle = surfaces), (reboundBy = 20))
-
-        // Resetar cenário ao cair
-        // player.fail()
-
-        // Penalidade
-        lifePanel()
-
-        // IMPEDIR JOGADOR DE DEIXAR A TELA <-
-        /* let screenStart = landscapes[0].x
-        if (
-          (screenStart > 0 && keys.right.pressed === false) ||
-          (screenStart > 0 && keys.left.pressed === false)
-        ) {
-          console.log('INÍCIO')
-          player.landscapeMotion((obstacle = landscapes), (byValue = -3 * 0.66))
-          player.landscapeMotion((obstacle = platforms), (byValue = -5))
-          player.landscapeMotion((obstacle = hills), (byValue = -5))
-          player.landscapeMotion((obstacle = pipes), (byValue = -5))
-          player.landscapeMotion((obstacle = surfaces), (byValue = -5))
-        } */
 
         // wolfDraw()
 
@@ -736,28 +782,45 @@
         this.whereY,
         this.canvasWidth,
         this.canvasHeight 
-        ctx.drawImage(wolfWalkRight, 1380, 0, 175, 161, 300, 200, 200, 200)
+        // CHECAGEM DE CADA ÍNDICE: [0][0]...[1][1]...IMAGENS NÃO DEVEM INVADIR O ESPAÇO DAS OUTRAS
+        // AS COORDENADAS SEGUEM A ORDEM: PONTA DA IMAGEM 1 ATÉ PONTA DA PENÚLTIMA IMAGEM
+        ctx.drawImage(wolfWalkRight, 1380, 0, 175, 161, 400, 100, 300, 300)
+        [0, 120]
+        [57]
+        0=ok...
         */
+        // ctx.drawImage(koopaRedShell, 0, 0, 15, 16, 400, 200, 32, 32)
+        
+        // Penalidade
+        lifePanel()
 
         charWolf.draw()
         charWolf.frameAdmin()
         charWolf.move()
+        /* ========================================================================================
+        // Em que contexto usar? Em jogos ou cenários que o jogador não precisa cair
+        // charWolf.gravity((byValue = 1))
+        ======================================================================================== */
         charWolf.fallDown((byValue = 1))
         charWolf.horizontalSetup((speed = 2.5))
+        charWolf.fail()
+
         charWolf.landscapeMotion((obstacle = landscapes), (byValue = 3 * 0.66))
         charWolf.landscapeMotion((obstacle = platforms), (byValue = 5))
         charWolf.landscapeMotion((obstacle = hills), (byValue = 5))
         charWolf.landscapeMotion((obstacle = pipes), (byValue = 5))
         charWolf.landscapeMotion((obstacle = surfaces), (byValue = 5))
+
         charWolf.collisionBottom((obstacle = platforms))
         charWolf.collisionBottom((obstacle = hills))
         charWolf.collisionBottom((obstacle = pipes))
         charWolf.collisionBottom((obstacle = surfaces))
+
         charWolf.collisionHorizontal((obstacle = platforms), (reboundBy = 10))
         charWolf.collisionHorizontal((obstacle = hills), (reboundBy = 10))
         charWolf.collisionHorizontal((obstacle = pipes), (reboundBy = 10))
         charWolf.collisionHorizontal((obstacle = surfaces), (reboundBy = 10))
-        charWolf.fail()
+        
 
         // IMPEDIR JOGADOR DE DEIXAR A TELA <-
         let screenStart2 = landscapes[0].x
@@ -766,18 +829,15 @@
           (screenStart2 > 0 && keys.left.pressed === false)
         ) {
           console.log('INÍCIO')
-          charWolf.landscapeMotion((obstacle = landscapes), (byValue = -3 * 0.66))
+          charWolf.landscapeMotion(
+            (obstacle = landscapes),
+            (byValue = -3 * 0.66)
+          )
           charWolf.landscapeMotion((obstacle = platforms), (byValue = -5))
           charWolf.landscapeMotion((obstacle = hills), (byValue = -5))
           charWolf.landscapeMotion((obstacle = pipes), (byValue = -5))
           charWolf.landscapeMotion((obstacle = surfaces), (byValue = -5))
         }
-
-        /* ========================================================================================
-        player.landscapeMotion((obstacle = liuKang), (byValue = 5))
-        player.collisionBottom((obstacle = liuKang))
-        player.collisionHorizontal((obstacle = liuKang), (reboundBy = 20)) // NOVO
-        ======================================================================================== */
 
         /* ========================================================================================
         // CONTROLE DE MOVIMENTAÇÃO DE PLATAFORMAS
@@ -867,20 +927,22 @@
         switch (event.key) {
           case 'w':
             // [-= é usado pois há gravidade garantindo a queda]
-
+            // keys.up.pressed = true
             // player.vy -= 20
+            charWolf.go((image = wolfSpin), (reference = wolfSetup), (action = 'jump'))
             charWolf.vy -= 20
             break
           case 'd':
-            keys.right.pressed = true
-            charWolf = charWolfWalkRight
             // [+= não é usado p/ não add + velocidade se segurar]
             // player.vx = 5
+            keys.right.pressed = true
+            charWolf.go((image = wolfWalkRight), (reference = wolfSetup), (action = 'walk_right'))
             break
           case 's':
             break
           case 'a':
             keys.left.pressed = true
+            charWolf.go((image = wolfWalkLeft), (reference = wolfSetup), (action = 'walk_left'))
             break
         }
       })
@@ -891,13 +953,14 @@
             break
           case 'd':
             keys.right.pressed = false
-            charWolfWalkRight = wolf
+            charWolf.go((image = wolf), (reference = wolfSetup), (action = 'idle_right'))
             // player.vx = 0
             break
-          case '':
+          case 's':
             break
           case 'a':
             keys.left.pressed = false
+            charWolf.go((image = wolfIdleLeft), (reference = wolfSetup), (action = 'idle_left'))
             break
         }
       })
