@@ -66,8 +66,8 @@
           this.y = 500
           this.vx = 0
           this.vy = 1
-          this.width = 30
-          this.height = 30
+          this.width = 1
+          this.height = 1
         }
 
         draw() {
@@ -259,7 +259,112 @@
           this.modularCounter = modularCounter
           this.modular = modular
           this.frameAmount = frameAmount
+
+          this.vx = 0
+          this.vy = 1
           // this.frameAmount = this.widthList.length - 1
+        }
+
+        gravity(byValue) {
+          // 19:05 [AQUI 1]
+          if (this.whereY + this.canvasHeight + this.vy <= canvas.height) {
+            this.vy += byValue
+          } else {
+            this.vy = 0
+          }
+        }
+
+        fallDown(byValue) {
+          if (this.whereY + this.canvasHeight + this.vy <= canvas.height) {
+            this.vy += byValue
+          }
+        }
+
+        fail() {
+          // 01:26:50
+          // Na presença de uma plataforma, "this.y" é sempre < que "canvas.height"
+          // Na ausência de uma plataforma, "this.y" pode ficar > que "canvas.height"
+          if (this.whereY > canvas.height) {
+            lives -= 1
+            init()
+          }
+        }
+
+        horizontalSetup(speed, obstacle) {
+          // 33:35 [AQUI 2] Jogador se mexe com base em "this.vx"
+          // 44:45 [AQUI 4] quanto maior o divisível, mais o jogador se apróximo da borda ->
+          // 45:25 [AQUI 5] quanto maior o divisível, mais o jogador se distancia da borda <-
+          if (keys.right.pressed && this.whereX < canvas.width / 1.4) {
+            this.vx = speed
+          } else if (keys.left.pressed && this.whereX > canvas.width / 4) {
+            this.vx = -speed
+          }
+          // GATILHO PARA MOVIMENTAÇÂO DE CENÁRIO
+          else {
+            this.vx = 0
+            keys.trigger.pressed = true
+            // Quando alcança o canto ->: condição 1 é falsa
+            // Quando alcança o canto <-: condição 2 é falsa
+            // console.log('1', this.x < canvas.width - this.width * 2)
+            // console.log('2', this.x > this.width)
+          }
+        }
+
+        landscapeMotion(obstacle, byValue) {
+          // 46:10 [ AQUI 6 ] Personagem em movimento ou estático VS Cenário móvel em direção oposta
+          if (keys.trigger.pressed && keys.right.pressed) {
+            obstacle.forEach(index => {
+              index.x -= byValue
+            })
+            // obstacle.x -= byValue
+          } else if (keys.trigger.pressed && keys.left.pressed) {
+            obstacle.forEach(index => {
+              index.x += byValue
+            })
+            // obstacle.x += byValue
+          }
+        }
+
+        move() {
+          this.whereX += this.vx
+          this.whereY += this.vy
+        }
+
+        collisionBottom(obstacle) {
+          obstacle.forEach(index => {
+            // 39:15 até 43:20 [AQUI 3]
+            if (
+              this.whereY + this.canvasHeight <= index.y &&
+              this.whereY + this.canvasHeight + this.vy >= index.y &&
+              this.whereX + this.canvasWidth >= index.x &&
+              this.whereX <= index.x + index.width
+            ) {
+              this.vy = 0
+            }
+          })
+        }
+
+        // NOVO
+        collisionHorizontal(obstacle, reboundBy) {
+          obstacle.forEach(index => {
+            if (
+              this.whereX + this.canvasWidth >= index.x &&
+              this.whereX <= index.x + index.width &&
+              this.whereY + this.canvasHeight >= index.y &&
+              this.whereY <= index.y + index.height
+            ) {
+              // Havendo colisão, o cenário precisa parar de mexer: "keys.trigger.pressed"
+              // Havendo colisão, o personagem precisa parar de mexer: "this.vx"
+              keys.trigger.pressed = false
+              if (keys.right.pressed) {
+                this.vx -= reboundBy
+              } else if (keys.left.pressed) {
+                this.vx += reboundBy
+              }
+
+              // console.log(this.x + this.width >= index.x, this.x <= index.x + index.width, this.y + this.height >= index.y, this.y <= index.y + index.height)
+            }
+          })
         }
 
         draw() {
@@ -276,7 +381,7 @@
           )
         }
 
-        update() {
+        frameAdmin() {
           this.modularCounter++
 
           if (this.modularCounter % this.modular === 0) {
@@ -299,41 +404,40 @@
           return false
         }
       }
-
+      
+      // JOGADOR
       let wolf = new Image()
       wolf.src = './assets/wolf_idle_right_tr.png'
+      let wolfWalkRight = new Image()
+      wolfWalkRight.src = './assets/wolf_walk_right_tr.png'
 
-      // IMAGENS
+      // RECURSOS VIZUAIS
       let backgroundDarkCyan = new Image()
-      let backgroundHills = new Image()
-      let floatingPlatforms = new Image()
-      let surface = new Image()
-      let purplePipe = new Image()
-      let hillSmall = new Image()
-
-      // LOCALIZAÇÃO DAS IMAGENS
       backgroundDarkCyan.src = './assets/background.png'
+      let backgroundHills = new Image()
       backgroundHills.src = './assets/hills.png'
-      floatingPlatforms.src = './assets/platform_small.png'
+
+      // SUPERFÍCIE
+      let surface = new Image()
       surface.src = './assets/mario_world_surface.png'
+
+      // PLATAFORMAS
+      let floatingPlatforms = new Image()
+      floatingPlatforms.src = './assets/platform_small.png'
+
+      // OBSTÁCULOS
+      let purplePipe = new Image()
       purplePipe.src = './assets/purple_pipe_tr.png'
+      let hillSmall = new Image()
       hillSmall.src = './assets/hill_small_tr.png'
 
+      let charWolf = undefined
       let player = undefined
       let landscapes = []
       let surfaces = []
       let platforms = []
       let pipes = []
       let hills = []
-
-      /* ========================================================================================
-      // INIMIGOS
-      const liuKang = []
-      let liuKangForward = new Image()
-      let liuKangBackwards = new Image()
-      liuKangForward.src = './assets/liu_kang_right.png'
-      liuKangBackwards.src = './assets/liu_kang_left.png'
-      ======================================================================================== */
 
       // Relacionamento: Player.fail()
       function lifePanel() {
@@ -354,12 +458,45 @@
       }
 
       function init() {
-        player = new Player()
+        // player = new Player()
         landscapes = []
         surfaces = []
         platforms = []
         pipes = []
         hills = []
+
+        // Sobre a lista 1: No paint, é possível obter as coordenadas com o ponteiro em cada extremidade da imagem
+        charWolf = new Foe({
+          image: wolf,
+          widthList: [0, 184, 365, 542, 715, 892, 1074],
+          frameCounter: 0,
+          fixedHeight: 0,
+          widthList2: [183, 183, 177, 171, 174, 180, 185],
+          srcHeight: 175,
+          whereX: 100,
+          whereY: 400,
+          canvasWidth: 70,
+          canvasHeight: 70,
+          modularCounter: 0,
+          modular: 10,
+          frameAmount: 6
+        })
+
+        charWolfWalkRight = new Foe({
+          image: wolfWalkRight,
+          widthList: [0, 172, 350, 510, 685, 860, 1033, 1205.7, 1380],
+          frameCounter: 0,
+          fixedHeight: 0,
+          widthList2: [171, 169, 160, 175, 175, 175, 175, 175, 175],
+          srcHeight: 161,
+          whereX: 100,
+          whereY: 400,
+          canvasWidth: 70,
+          canvasHeight: 70,
+          modularCounter: 0,
+          modular: 10,
+          frameAmount: 8
+        })
 
         // PLANO DE FUNDO: GENÉRICO
         landscapes.push(
@@ -422,7 +559,7 @@
           let newPlatform = new Platform({
             image: floatingPlatforms,
             x: platforms[i - 1].x + Math.floor(Math.random() * 400 + 300),
-            y: Math.random() * 300 + 100,
+            y: Math.floor(Math.random() * 300 + 250),
             width: 201,
             height: 40
           })
@@ -474,47 +611,14 @@
           })
           hills.push(newSmallHill)
         }
-
-        /* ========================================================================================
-        liuKang.push(
-          new Foe({
-            image: liuKangForward,
-            widthList: [0, 47, 91, 134, 177, 220, 263],
-            frameCounter: 0,
-            fixedHeight: 0,
-            widthList2: [47, 44, 43, 43, 43, 43, 43],
-            srcHeight: 100,
-            whereX: 350,
-            whereY: 460,
-            canvasWidth: 45,
-            canvasHeight: 100,
-            modularCounter: 0,
-            modular: 10,
-            frameAmount: 6
-          })
-        )
-        ======================================================================================== */
       }
 
       let pipeDelayCounter = 0
       let pipeEndPoint = 15
       let pipeCounter = 0
       let pipeEndPoint2 = 5
-
-      /* ========================================================================================
-      let platformModularCounter = 0
-      let platformModular = 25
-      let platformBeginning = 0
-      let platformClosure = 7
-      ======================================================================================== */
-
-      /* ========================================================================================
-      let liuKangDelayCounter = 0
-      let liuKangEndPoint = 15
-      let liuKangCounter = 0
-      let liuKangEndPoint2 = 5
-      ======================================================================================== */
-
+      
+      // RECURSOS DE TESTE DA FUNÇÃO TESTE DE CRIAÇÃO DE SPRITES "wolfDraw()" (usado em animate())
       let test2 = [0, 184, 365, 542, 715, 892, 1074]
       let test3 = [183, 183, 177, 171, 174, 180, 185]
       let wolfModularCounter = 0
@@ -565,21 +669,14 @@
           pipe.draw()
         })
 
-        /* ========================================================================================
-        liuKang.forEach(index => {
-          index.draw()
-          index.update()
-        })
-        ======================================================================================== */
-
         surfaces.forEach(surface => {
           surface.draw()
         })
 
         // Criado após a superfície, pois: evitar sobreposição dos recursos sobre o personagem
-        player.draw()
+        // player.draw()
 
-        player.move()
+        // player.move()
 
         /* ========================================================================================
         // Em que contexto usar? Em jogos ou cenários que o jogador não precisa cair
@@ -587,34 +684,34 @@
         ======================================================================================== */
 
         // Em que contexto usar? Em jogos ou cenários que o jogador pode cair
-        player.fallDown((byValue = 1))
+        // player.fallDown((byValue = 1))
 
-        player.horizontalSetup((speed = 2.5))
+        // player.horizontalSetup((speed = 2.5))
 
-        player.landscapeMotion((obstacle = landscapes), (byValue = 3 * 0.66))
-        player.landscapeMotion((obstacle = platforms), (byValue = 5))
-        player.landscapeMotion((obstacle = hills), (byValue = 5))
-        player.landscapeMotion((obstacle = pipes), (byValue = 5))
-        player.landscapeMotion((obstacle = surfaces), (byValue = 5))
+        // player.landscapeMotion((obstacle = landscapes), (byValue = 3 * 0.66))
+        // player.landscapeMotion((obstacle = platforms), (byValue = 5))
+        // player.landscapeMotion((obstacle = hills), (byValue = 5))
+        // player.landscapeMotion((obstacle = pipes), (byValue = 5))
+        // player.landscapeMotion((obstacle = surfaces), (byValue = 5))
 
-        player.collisionBottom((obstacle = platforms))
-        player.collisionBottom((obstacle = hills))
-        player.collisionBottom((obstacle = pipes))
-        player.collisionBottom((obstacle = surfaces))
+        // player.collisionBottom((obstacle = platforms))
+        // player.collisionBottom((obstacle = hills))
+        // player.collisionBottom((obstacle = pipes))
+        // player.collisionBottom((obstacle = surfaces))
 
-        player.collisionHorizontal((obstacle = platforms), (reboundBy = 20))
-        player.collisionHorizontal((obstacle = hills), (reboundBy = 20))
-        player.collisionHorizontal((obstacle = pipes), (reboundBy = 20))
-        player.collisionHorizontal((obstacle = surfaces), (reboundBy = 20))
+        // player.collisionHorizontal((obstacle = platforms), (reboundBy = 20))
+        // player.collisionHorizontal((obstacle = hills), (reboundBy = 20))
+        // player.collisionHorizontal((obstacle = pipes), (reboundBy = 20))
+        // player.collisionHorizontal((obstacle = surfaces), (reboundBy = 20))
 
         // Resetar cenário ao cair
-        player.fail()
+        // player.fail()
 
         // Penalidade
         lifePanel()
 
         // IMPEDIR JOGADOR DE DEIXAR A TELA <-
-        let screenStart = landscapes[0].x
+        /* let screenStart = landscapes[0].x
         if (
           (screenStart > 0 && keys.right.pressed === false) ||
           (screenStart > 0 && keys.left.pressed === false)
@@ -625,9 +722,56 @@
           player.landscapeMotion((obstacle = hills), (byValue = -5))
           player.landscapeMotion((obstacle = pipes), (byValue = -5))
           player.landscapeMotion((obstacle = surfaces), (byValue = -5))
-        }
+        } */
 
-        wolfDraw()
+        // wolfDraw()
+
+        /*
+        this.image,
+        this.widthList[this.frameCounter],
+        this.fixedHeight,
+        this.widthList2[this.frameCounter],
+        this.srcHeight,
+        this.whereX,
+        this.whereY,
+        this.canvasWidth,
+        this.canvasHeight 
+        ctx.drawImage(wolfWalkRight, 1380, 0, 175, 161, 300, 200, 200, 200)
+        */
+
+        charWolf.draw()
+        charWolf.frameAdmin()
+        charWolf.move()
+        charWolf.fallDown((byValue = 1))
+        charWolf.horizontalSetup((speed = 2.5))
+        charWolf.landscapeMotion((obstacle = landscapes), (byValue = 3 * 0.66))
+        charWolf.landscapeMotion((obstacle = platforms), (byValue = 5))
+        charWolf.landscapeMotion((obstacle = hills), (byValue = 5))
+        charWolf.landscapeMotion((obstacle = pipes), (byValue = 5))
+        charWolf.landscapeMotion((obstacle = surfaces), (byValue = 5))
+        charWolf.collisionBottom((obstacle = platforms))
+        charWolf.collisionBottom((obstacle = hills))
+        charWolf.collisionBottom((obstacle = pipes))
+        charWolf.collisionBottom((obstacle = surfaces))
+        charWolf.collisionHorizontal((obstacle = platforms), (reboundBy = 10))
+        charWolf.collisionHorizontal((obstacle = hills), (reboundBy = 10))
+        charWolf.collisionHorizontal((obstacle = pipes), (reboundBy = 10))
+        charWolf.collisionHorizontal((obstacle = surfaces), (reboundBy = 10))
+        charWolf.fail()
+
+        // IMPEDIR JOGADOR DE DEIXAR A TELA <-
+        let screenStart2 = landscapes[0].x
+        if (
+          (screenStart2 > 0 && keys.right.pressed === false) ||
+          (screenStart2 > 0 && keys.left.pressed === false)
+        ) {
+          console.log('INÍCIO')
+          charWolf.landscapeMotion((obstacle = landscapes), (byValue = -3 * 0.66))
+          charWolf.landscapeMotion((obstacle = platforms), (byValue = -5))
+          charWolf.landscapeMotion((obstacle = hills), (byValue = -5))
+          charWolf.landscapeMotion((obstacle = pipes), (byValue = -5))
+          charWolf.landscapeMotion((obstacle = surfaces), (byValue = -5))
+        }
 
         /* ========================================================================================
         player.landscapeMotion((obstacle = liuKang), (byValue = 5))
@@ -724,10 +868,12 @@
           case 'w':
             // [-= é usado pois há gravidade garantindo a queda]
 
-            player.vy -= 20
+            // player.vy -= 20
+            charWolf.vy -= 20
             break
           case 'd':
             keys.right.pressed = true
+            charWolf = charWolfWalkRight
             // [+= não é usado p/ não add + velocidade se segurar]
             // player.vx = 5
             break
@@ -745,6 +891,7 @@
             break
           case 'd':
             keys.right.pressed = false
+            charWolfWalkRight = wolf
             // player.vx = 0
             break
           case '':
