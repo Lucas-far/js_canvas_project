@@ -60,7 +60,1124 @@
         }
       }
 
+      class Platform {
+        constructor({ image, x, y, width, height }) {
+          this.image = image
+          this.x = x
+          this.y = y
+          this.width = width
+          this.height = height
+          this.newX = undefined
+          this.newY = undefined
+        }
+
+        draw() {
+          /* ctx.beginPath()
+                ctx.fillStyle = 'white'
+                ctx.fillRect(this.x, this.y, this.width, this.height)
+                ctx.fill() */
+          ctx.drawImage(this.image, this.x, this.y, this.width, this.height)
+        }
+
+        move() {
+          let delay = 0
+          let newDelay = Math.floor(Math.random() * (200 - 100) + 100)
+
+          // A cada 100 até 200 frames: mudar a posição em x e y
+          if (delay % newDelay === 0) {
+            this.newX = Math.random() * (canvas.width - this.width)
+            this.newY = Math.random() * (canvas.height - this.height)
+          }
+
+          let dx = this.x - this.newX
+          let dy = this.y - this.newY
+
+          // Mover de forma homogênia (a divisão torna a transição muito menos devagar)
+          this.x -= dx / (newDelay * 2)
+          this.y -= dy / (newDelay * 2)
+        }
+      }
+
       class Player {
+        constructor({
+          image,
+          widthList,
+          frameCounter,
+          fixedHeight,
+          widthList2,
+          srcHeight,
+          whereX,
+          whereY,
+          canvasWidth,
+          canvasHeight,
+          modularCounter,
+          modular,
+          frameAmount
+        }) {
+          this.image = image
+          this.widthList = widthList
+          this.frameCounter = frameCounter
+          this.fixedHeight = fixedHeight
+          this.widthList2 = widthList2
+          this.srcHeight = srcHeight
+          this.whereX = whereX
+          this.whereY = whereY
+          this.canvasWidth = canvasWidth
+          this.canvasHeight = canvasHeight
+          this.modularCounter = modularCounter
+          this.modular = modular
+          this.frameAmount = frameAmount
+
+          this.vx = 0
+          this.vy = 1
+          // this.frameAmount = this.widthList.length - 1
+        }
+
+        gravity(byValue) {
+          // 19:05 [AQUI 1]
+          if (this.whereY + this.canvasHeight + this.vy <= canvas.height) {
+            this.vy += byValue
+          } else {
+            this.vy = 0
+          }
+        }
+
+        fallDown(byValue) {
+          if (this.whereY + this.canvasHeight + this.vy <= canvas.height) {
+            this.vy += byValue
+          }
+        }
+
+        fail() {
+          // 01:26:50
+          // Na presença de uma plataforma, "this.y" é sempre < que "canvas.height"
+          // Na ausência de uma plataforma, "this.y" pode ficar > que "canvas.height"
+          if (this.whereY > canvas.height) {
+            lives -= 1
+            init()
+          }
+        }
+
+        horizontalSetup(speed) {
+          // 33:35 [AQUI 2] Jogador se mexe com base em "this.vx"
+          // 44:45 [AQUI 4] quanto maior o divisível, mais o jogador se apróximo da borda ->
+          // 45:25 [AQUI 5] quanto maior o divisível, mais o jogador se distancia da borda <-
+          if (keys.right.pressed && this.whereX < canvas.width / 1.4) {
+            this.vx = speed
+          } else if (keys.left.pressed && this.whereX > canvas.width / 4) {
+            this.vx = -speed
+          }
+          // GATILHO PARA MOVIMENTAÇÂO DE CENÁRIO
+          else {
+            this.vx = 0
+            keys.trigger.pressed = true
+            // Quando alcança o canto ->: condição 1 é falsa
+            // Quando alcança o canto <-: condição 2 é falsa
+            // console.log('1', this.x < canvas.width - this.width * 2)
+            // console.log('2', this.x > this.width)
+          }
+        }
+
+        landscapeMotion(obstacle, byValue, exception = false) {
+          if (exception) {
+            // 46:10 [ AQUI 6 ] Personagem em movimento ou estático VS Cenário móvel em direção oposta
+            if (keys.trigger.pressed && keys.right.pressed) {
+              obstacle.forEach(index => {
+                index.whereX -= byValue
+              })
+              // obstacle.x -= byValue
+            } else if (keys.trigger.pressed && keys.left.pressed) {
+              obstacle.forEach(index => {
+                index.whereX += byValue
+              })
+              // obstacle.x += byValue
+            }
+          } else {
+            // 46:10 [ AQUI 6 ] Personagem em movimento ou estático VS Cenário móvel em direção oposta
+            if (keys.trigger.pressed && keys.right.pressed) {
+              obstacle.forEach(index => {
+                index.x -= byValue
+              })
+              // obstacle.x -= byValue
+            } else if (keys.trigger.pressed && keys.left.pressed) {
+              obstacle.forEach(index => {
+                index.x += byValue
+              })
+              // obstacle.x += byValue
+            }
+          }
+        }
+
+        move() {
+          this.whereX += this.vx
+          this.whereY += this.vy
+        }
+
+        collisionBottom(obstacle, exception = false) {
+          if (exception) {
+            obstacle.forEach(index => {
+              if (
+                this.whereY + this.canvasHeight <= index.whereY &&
+                this.whereY + this.canvasHeight + this.vy >= index.whereY &&
+                this.whereX + this.canvasWidth >= index.whereX &&
+                this.whereX <= index.whereX + index.canvasWidth
+              ) {
+                this.vy = 0
+              }
+            })
+          } else {
+            // 39:15 até 43:20 [AQUI 3]
+            // Influencia o pouso
+            // Influencia o pouso
+            // Influencia a queda na horizontal <-
+            // Influencia a queda na horizontal ->
+            obstacle.forEach(index => {
+              if (
+                this.whereY + this.canvasHeight <= index.y &&
+                this.whereY + this.canvasHeight + this.vy >= index.y &&
+                this.whereX + this.canvasWidth >= index.x &&
+                this.whereX <= index.x + index.width
+              ) {
+                this.vy = 0
+              }
+            })
+          }
+        }
+
+        // NOVO
+        collisionHorizontal(obstacle, reboundBy, exception = false) {
+          if (exception) {
+            obstacle.forEach(index => {
+              if (
+                this.whereX + this.canvasWidth >= index.whereX &&
+                this.whereX <= index.whereX + index.canvasWidth &&
+                this.whereY + this.canvasHeight >= index.whereY &&
+                this.whereY <= index.whereY + index.canvasHeight
+              ) {
+                console.log('Colisão')
+                // Havendo colisão, o cenário precisa parar de mexer: "keys.trigger.pressed"
+                // Havendo colisão, o personagem precisa parar de mexer: "this.vx"
+                keys.trigger.pressed = false
+                if (keys.right.pressed) {
+                  this.vx -= reboundBy
+                } else if (keys.left.pressed) {
+                  this.vx += reboundBy
+                }
+              }
+            })
+          } else {
+            /*
+            // true = ponta -> do jogador toca ponta <- de algo
+            // console.log(charWolf.whereX, charWolf.canvasWidth, platforms[1].x)
+            // console.log(charWolf.whereX + charWolf.canvasWidth >= platforms[1].x)
+
+            // true = ponta <- do jogador toca ponta -> de algo
+            // console.log(charWolf.whereX <= platforms[1].x + platforms[1].width)
+            // console.log(charWolf.whereX <= platforms[1].x + platforms[1].width)
+          */
+            obstacle.forEach(index => {
+              if (
+                this.whereX + this.canvasWidth >= index.x &&
+                this.whereX <= index.x + index.width &&
+                this.whereY + this.canvasHeight >= index.y &&
+                this.whereY <= index.y + index.height
+              ) {
+                console.log('Colisão')
+                // Havendo colisão, o cenário precisa parar de mexer: "keys.trigger.pressed"
+                // Havendo colisão, o personagem precisa parar de mexer: "this.vx"
+                keys.trigger.pressed = false
+                if (keys.right.pressed) {
+                  this.vx -= reboundBy
+                } else if (keys.left.pressed) {
+                  this.vx += reboundBy
+                }
+              }
+            })
+          }
+        }
+
+        draw() {
+          ctx.drawImage(
+            this.image,
+            this.widthList[this.frameCounter],
+            this.fixedHeight,
+            this.widthList2[this.frameCounter],
+            this.srcHeight,
+            this.whereX,
+            this.whereY,
+            this.canvasWidth,
+            this.canvasHeight
+          )
+        }
+
+        frameAdmin() {
+          this.modularCounter++
+
+          if (this.modularCounter % this.modular === 0) {
+            if (this.frameCounter < this.frameAmount) {
+              this.frameCounter++
+            } else {
+              this.frameCounter = 0
+            }
+          }
+        }
+
+        go(image, reference, action) {
+          if (action === 'walk_right') {
+            this.image = image
+            this.widthList = reference.walkRight.widthList
+            this.widthList2 = reference.walkRight.widthList2
+            this.srcHeight = reference.walkRight.srcHeight
+            this.frameAmount = reference.walkRight.frameAmount
+          } else if (action === 'walk_left') {
+            this.image = image
+            this.widthList = reference.walkLeft.widthList
+            this.widthList2 = reference.walkLeft.widthList2
+            this.srcHeight = reference.walkLeft.srcHeight
+            this.frameAmount = reference.walkLeft.frameAmount
+          } else if (action === 'idle_right') {
+            this.image = image
+            this.widthList = reference.idleRight.widthList
+            this.widthList2 = reference.idleRight.widthList2
+            this.srcHeight = reference.idleRight.srcHeight
+            this.frameAmount = reference.idleRight.frameAmount
+          } else if (action === 'idle_left') {
+            this.image = image
+            this.widthList = reference.idleLeft.widthList
+            this.widthList2 = reference.idleLeft.widthList2
+            this.srcHeight = reference.idleLeft.srcHeight
+            this.frameAmount = reference.idleLeft.frameAmount
+          } else if (action === 'jump') {
+            this.image = image
+            this.widthList = reference.spin.widthList
+            this.widthList2 = reference.spin.widthList2
+            this.srcHeight = reference.spin.srcHeight
+            this.frameAmount = reference.spin.frameAmount
+          } else if (action === 'jump_right') {
+            this.image = image
+            this.widthList = reference.jumpRight.widthList
+            this.widthList2 = reference.jumpRight.widthList2
+            this.srcHeight = reference.jumpRight.srcHeight
+            this.frameAmount = reference.jumpRight.frameAmount
+          } else if (action === 'jump_right_edited') {
+            this.image = image
+            this.widthList = reference.jumpRightEdited.widthList
+            this.widthList2 = reference.jumpRightEdited.widthList2
+            this.srcHeight = reference.jumpRightEdited.srcHeight
+            this.frameAmount = reference.jumpRightEdited.frameAmount
+          }
+        }
+      }
+
+      class Foe {
+        constructor({
+          image,
+          widthList,
+          frameCounter,
+          fixedHeight,
+          widthList2,
+          srcHeight,
+          whereX,
+          whereY,
+          canvasWidth,
+          canvasHeight,
+          modularCounter,
+          modular,
+          frameAmount
+        }) {
+          this.image = image
+          this.widthList = widthList
+          this.frameCounter = frameCounter
+          this.fixedHeight = fixedHeight
+          this.widthList2 = widthList2
+          this.srcHeight = srcHeight
+          this.whereX = whereX
+          this.whereY = whereY
+          this.canvasWidth = canvasWidth
+          this.canvasHeight = canvasHeight
+          this.modularCounter = modularCounter
+          this.modular = modular
+          this.frameAmount = frameAmount
+
+          this.vx = 0
+          this.vy = 1
+          // this.frameAmount = this.widthList.length - 1
+        }
+
+        gravity(byValue) {
+          // 19:05 [AQUI 1]
+          if (this.whereY + this.canvasHeight + this.vy <= canvas.height) {
+            this.vy += byValue
+          } else {
+            this.vy = 0
+          }
+        }
+        
+        fallDown(byValue) {
+          if (this.whereY + this.canvasHeight + this.vy <= canvas.height) {
+            this.vy += byValue
+          }
+        }
+
+        move() {
+          this.whereX += this.vx
+          this.whereY += this.vy
+        }
+
+        spawn() {
+          let choice = [Math.random()]
+          let goTo = choice[Math.floor(Math.random() * 2)]
+
+          if (goTo < 0.22) {
+            this.whereX += integersBetween(0.1, 10) * 0.66
+          } else if (goTo > 0.77) {
+            this.whereX -= integersBetween(0.1, 10) * 0.66
+          }
+
+          /* this.whereY += Math.random() * 5
+          if (this.whereY > canvas.height) {
+            this.whereY = -100
+          } */
+        }
+
+        draw() {
+          ctx.drawImage(
+            this.image,
+            this.widthList[this.frameCounter],
+            this.fixedHeight,
+            this.widthList2[this.frameCounter],
+            this.srcHeight,
+            this.whereX,
+            this.whereY,
+            this.canvasWidth,
+            this.canvasHeight
+          )
+        }
+
+        frameAdmin() {
+          this.modularCounter++
+
+          if (this.modularCounter % this.modular === 0) {
+            if (this.frameCounter < this.frameAmount) {
+              this.frameCounter++
+            } else {
+              this.frameCounter = 0
+            }
+          }
+        }
+      }
+
+      function decisionMaking() {
+        let choice = [true, false]
+        let result = choice[Math.floor(Math.random() * 2)]
+        if (result) {
+          return true
+        } else {
+          return false
+        }
+      }
+
+      function integersBetween(min, max, float = false) {
+        if (float) {
+          return Math.random() * (max - min + 1) + min
+        }
+        return Math.floor(Math.random() * (max - min + 1) + min)
+      }
+
+      // JOGADOR
+      let wolf = new Image()
+      wolf.src = './assets/wolf_idle_right_tr.png'
+      let wolfIdleLeft = new Image()
+      wolfIdleLeft.src = './assets/wolf_idle_left_tr.png'
+      let wolfWalkRight = new Image()
+      wolfWalkRight.src = './assets/wolf_walk_right_tr.png'
+      let wolfWalkLeft = new Image()
+      wolfWalkLeft.src = './assets/wolf_walk_left_tr.png'
+      let wolfSpin = new Image()
+      wolfSpin.src = './assets/spin_rainbow_tr.png'
+      let wolfJumpRight = new Image()
+      wolfJumpRight.src = './assets/wolf_jump_right_tr.png'
+      let wolfJumpRightEdited = new Image()
+      wolfJumpRightEdited.src = './assets/wolf_jump_right_edited_tr.png'
+
+      // INIMIGOS
+      let koopaRedShell = new Image()
+      let koopaColorfulShell = new Image()
+      let koopaGoldenShell = new Image()
+      koopaRedShell.src = './assets/koopa_red_shell.gif'
+      koopaColorfulShell.src = './assets/koopa_colorful_shell.gif'
+      koopaGoldenShell.src = './assets/koopa_golden_shell.gif'
+      let koopaShellTypes = [
+        koopaRedShell,
+        koopaColorfulShell,
+        koopaGoldenShell
+      ]
+
+      // RECURSOS VIZUAIS
+      let backgroundDarkCyan = new Image()
+      backgroundDarkCyan.src = './assets/background.png'
+      let backgroundHills = new Image()
+      backgroundHills.src = './assets/hills.png'
+
+      // SUPERFÍCIE
+      let surface = new Image()
+      surface.src = './assets/mario_world_surface.png'
+
+      // PLATAFORMAS
+      let stonePlatform10 = new Image()
+      let stonePlatform9 = new Image()
+      let stonePlatform8 = new Image()
+      let stonePlatform7 = new Image()
+      let stonePlatform6 = new Image()
+      let stonePlatform5 = new Image()
+      let stonePlatform4 = new Image()
+      stonePlatform10.src = './assets/stone_platform10_tr.gif'
+      stonePlatform9.src = './assets/stone_platform9_tr.gif'
+      stonePlatform8.src = './assets/stone_platform8_tr.gif'
+      stonePlatform7.src = './assets/stone_platform7_tr.gif'
+      stonePlatform6.src = './assets/stone_platform6_tr.gif'
+      stonePlatform5.src = './assets/stone_platform5_tr.gif'
+      stonePlatform4.src = './assets/stone_platform4_tr.gif'
+      let platformTypes = [
+        stonePlatform10,
+        stonePlatform9,
+        stonePlatform8,
+        stonePlatform7,
+        stonePlatform6,
+        stonePlatform5,
+        stonePlatform4
+      ]
+
+      // OBSTÁCULOS
+      let purplePipe = new Image()
+      purplePipe.src = './assets/purple_pipe_tr.png'
+      let hillSmall = new Image()
+      hillSmall.src = './assets/hill_small_tr.png'
+      let brick = new Image()
+      brick.src = './assets/happy_brick_tr.gif'
+
+      let wolfSetup = {
+        idleRight: {
+          widthList: [0, 184, 365, 542, 715, 892, 1074],
+          widthList2: [183, 183, 177, 171, 174, 180, 185],
+          srcHeight: 175,
+          frameAmount: 6
+        },
+
+        idleLeft: {
+          widthList: [0, 185, 367, 544, 717, 894, 1074],
+          widthList2: [187, 183, 177, 173, 177, 181, 185],
+          srcHeight: 175,
+          frameAmount: 6
+        },
+
+        walkRight: {
+          widthList: [0, 172, 350, 510, 685, 860, 1033, 1205.7, 1380],
+          widthList2: [171, 169, 160, 175, 175, 175, 175, 175, 175],
+          srcHeight: 161,
+          frameAmount: 8
+        },
+
+        // INVERTER O SPRITE DA DIREITA NO PAINT + INVERTER A ORDEM DOS FRAMES (CORRIGIR MOVIMENTO INVERSO)
+        walkLeft: {
+          // widthList: [0, 172, 344, 515, 690, 865, 1037, 1208, 1380],
+          widthList: [1380, 1208, 1037, 865, 690, 515, 344, 172, 0],
+          // widthList2: [171, 169, 174, 175, 175, 175, 172, 172, 172],
+          widthList2: [172, 172, 172, 175, 175, 175, 174, 169, 171],
+          srcHeight: 161,
+          frameAmount: 8
+        },
+
+        jumpRight: {
+          widthList: [0, 189, 378, 567, 755, 945, 1135],
+          widthList2: [189, 189, 189, 189, 189, 189, 189],
+          srcHeight: 188,
+          frameAmount: 6
+        },
+
+        jumpRightEdited: {
+          widthList: [0, 178, 355, 531, 709, 886, 1064, 1242],
+          widthList2: [178, 178, 178, 178, 178, 178, 178, 178],
+          srcHeight: 176,
+          frameAmount: 7
+        },
+
+        spin: {
+          widthList: [0, 191, 375, 563, 754, 940, 1126],
+          widthList2: [191, 186, 186, 186, 186, 186, 193],
+          srcHeight: 189,
+          frameAmount: 6
+        }
+      }
+
+      let charWolf = undefined
+      let enemies = []
+      let landscapes = []
+      let surfaces = []
+      let platforms = []
+      let pipes = []
+      let hills = []
+      let bricks = []
+
+      // Relacionamento: Player.fail()
+      function lifePanel() {
+        if (lives === 0) {
+          ctx.fillStyle = 'rgba(255,255,255)'
+          ctx.fillRect(0, 0, canvas.width, canvas.height)
+
+          ctx.fillStyle = 'blue'
+          ctx.font = '100px georgia'
+          ctx.fillText('GAME OVER', 100, 100)
+
+          ctx.fill()
+        } else {
+          ctx.fillStyle = 'cyan'
+          ctx.font = '25px georgia'
+          ctx.fillText('Vidas: ' + lives, 50, 50)
+        }
+      }
+
+      function init() {
+        // player = new Player()
+        enemies = []
+        landscapes = []
+        surfaces = []
+        platforms = []
+        pipes = []
+        hills = []
+        bricks = []
+
+        // Sobre a lista 1: No paint, é possível obter as coordenadas com o ponteiro em cada extremidade da imagem
+        // Posição Y: altura do canvas Y - altura do sprite - altura da superfície
+        charWolf = new Player({
+          image: wolf,
+          widthList: wolfSetup.idleRight.widthList,
+          frameCounter: 0,
+          fixedHeight: 0,
+          widthList2: wolfSetup.idleRight.widthList2,
+          srcHeight: wolfSetup.idleRight.srcHeight,
+          whereX: 100,
+          whereY: canvas.height - 70 - 61,
+          canvasWidth: 70,
+          canvasHeight: 70,
+          modularCounter: 0,
+          modular: 5,
+          frameAmount: wolfSetup.idleRight.frameAmount
+        })
+
+        // PRIMEIRO CASCO
+        enemies.push(
+          new Foe({
+            image: koopaShellTypes[integersBetween(0, 2)],
+            widthList: [0, 16, 33.5, 50],
+            frameCounter: 0,
+            fixedHeight: 0,
+            widthList2: [16, 18, 17, 17],
+            srcHeight: 16,
+            whereX: integersBetween(700, 1000),
+            whereY: 535,
+            canvasWidth: 32,
+            canvasHeight: 32,
+            modularCounter: 0,
+            modular: 10,
+            frameAmount: 3
+          })
+        )
+
+        // [0, 17.5, 34.5, 51.5]
+        // [16, 17.5, 17, 17]
+        // CASCOS SECUNDÁRIOS
+        for (let i = 1; i < 50; i++) {
+          enemies.push(
+            new Foe({
+              image: koopaShellTypes[integersBetween(0, 2)],
+              widthList: [0, 16, 33.5, 50],
+              frameCounter: 0,
+              fixedHeight: 0,
+              widthList2: [16, 18, 17, 17],
+              srcHeight: 16,
+              whereX: enemies[i - 1].whereX + integersBetween(700, 1000),
+              whereY: 535,
+              canvasWidth: 32,
+              canvasHeight: 32,
+              modularCounter: 0,
+              modular: 20,
+              frameAmount: 3
+            })
+          )
+        }
+
+        // PLANO DE FUNDO: GENÉRICO
+        landscapes.push(
+          new Landscape({
+            image: backgroundDarkCyan,
+            x: 0,
+            y: 0,
+            width: 11643,
+            height: 732
+          })
+        )
+
+        // PLANO DE FUNDO: PLANÍCIES
+        landscapes.push(
+          new Landscape({
+            image: backgroundHills,
+            x: 0,
+            y: 0,
+            width: 7545,
+            height: 592
+          })
+        )
+
+        // SUPERFÍCIE PRIMÁRIA (posição x usada como base nas secundárias)
+        surfaces.push(
+          new Platform({
+            image: surface,
+            x: 0,
+            y: integersBetween(560, 570),
+            width: 499,
+            height: 61
+          })
+        )
+
+        // SUPERFÍCIES SECUNDÁRIAS (usam o valor base + um valor de distanciamento definido por "Math.random()")
+        // +499 = tamanho da plataforma (somada ao valor abaixo, para criar uma lacuna)
+        // +72  = referente ao tamanho do personagem
+        for (let i = 1; i <= 50; i++) {
+          let newSurface = new Platform({
+            image: surface,
+            x: surfaces[i - 1].x + integersBetween(499 + 80, 499 + 140, true),
+            y: integersBetween(560, 570),
+            width: 499,
+            height: 61
+          })
+          surfaces.push(newSurface)
+        }
+
+        // PLATAFORMA PRIMÁRIA
+        platforms.push(
+          new Platform({
+            image: platformTypes[integersBetween(0, 6)],
+            x: integersBetween(700, 1100, true),
+            y: integersBetween(250, 350, true),
+            width: 200,
+            height: 30
+          })
+        )
+
+        // PLATAFORMAS SECUNDÁRIAS
+        for (let i = 1; i <= 50; i++) {
+          let newPlatform = new Platform({
+            image: platformTypes[integersBetween(0, 6)],
+            x: platforms[i - 1].x + integersBetween(700, 1200),
+            y: integersBetween(250, 350, true),
+            width: 200,
+            height: 30
+          })
+          platforms.push(newPlatform)
+        }
+
+        // CANO PRIMÁRIO
+        pipes.push(
+          new Platform({
+            image: purplePipe,
+            x: integersBetween(700, 1000, true),
+            y: integersBetween(500, 520, true),
+            width: 44,
+            height: 64
+          })
+        )
+
+        // CANOS SECUNDÁRIOS
+        for (let i = 1; i <= 50; i++) {
+          let newPipe = new Platform({
+            image: purplePipe,
+            x: pipes[i - 1].x + integersBetween(700, 1000, true),
+            y: integersBetween(500, 520, true),
+            width: 44,
+            height: 64
+          })
+          pipes.push(newPipe)
+        }
+
+        // COLINA PEQUENA
+        hills.push(
+          new Platform({
+            image: hillSmall,
+            x: integersBetween(300, 700, true),
+            y: integersBetween(445, 470, true),
+            width: 64 * integersBetween(2, 4, true),
+            height: 49 * integersBetween(2.7, 3.3, true)
+          })
+        )
+
+        // COLINAS PEQUENAS SECUNDÁRIAS
+        for (let i = 1; i <= 50; i++) {
+          let newSmallHill = new Platform({
+            image: hillSmall,
+            x: hills[i - 1].x + integersBetween(200, 1000, true),
+            y: integersBetween(445, 470, true),
+            width: 64 * integersBetween(2, 4, true),
+            height: 49 * integersBetween(2.7, 4, true)
+          })
+          hills.push(newSmallHill)
+        }
+
+        // TIJOLO
+        bricks.push(
+          new Platform({
+            image: brick,
+            x: integersBetween(100, 1100),
+            y: integersBetween(200, 300),
+            width: 32,
+            height: 34
+          })
+        )
+
+        // TIJOLOS SECUNDÁRIOS
+        for (let i = 1; i <= 50; i++) {
+          let newBrick = new Platform({
+            image: brick,
+            x: bricks[i - 1].x + integersBetween(500, 1000),
+            y: integersBetween(200, 300),
+            width: 32,
+            height: 34
+          })
+          bricks.push(newBrick)
+        }
+      }
+
+      let pipeDelayCounter = 0
+      let pipeEndPoint = 15
+      let pipeCounter = 0
+      let pipeEndPoint2 = 5
+
+      // RECURSOS DE TESTE DA FUNÇÃO TESTE DE CRIAÇÃO DE SPRITES "wolfDraw()" (usado em animate())
+      let test2 = [0, 184, 365, 542, 715, 892, 1074]
+      let test3 = [183, 183, 177, 171, 174, 180, 185]
+      let wolfModularCounter = 0
+      let wolfModular = 10
+      let wolfFrameCounter = 0
+      let wolfFrameAmount = 6
+
+      function wolfDraw() {
+        ctx.drawImage(
+          wolf,
+          test2[wolfFrameCounter],
+          0,
+          test3[wolfFrameCounter],
+          198,
+          300,
+          300,
+          100,
+          100
+        )
+
+        wolfModularCounter++
+        if (wolfModularCounter % wolfModular === 0) {
+          if (wolfFrameCounter < wolfFrameAmount) {
+            wolfFrameCounter++
+          } else {
+            wolfFrameCounter = 0
+          }
+        }
+      }
+
+      function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height)
+
+        landscapes.forEach(landscape => {
+          landscape.draw()
+        })
+
+        platforms.forEach(platform => {
+          platform.draw()
+        })
+
+        hills.forEach(hill => {
+          hill.draw()
+        })
+
+        pipes.forEach(pipe => {
+          pipe.draw()
+        })
+
+        bricks.forEach(brick => {
+          brick.draw()
+        })
+
+        surfaces.forEach(surface => {
+          surface.draw()
+        })
+
+        enemies.forEach(enemy => {
+          enemy.draw()
+          enemy.frameAdmin()
+          // enemy.move()
+          // enemy.fallDown((byValue = 1))
+          enemy.spawn()
+        })
+
+        // true = pulo do jogador alcança o topo de algum obstáculo
+        // console.log(charWolf.whereY, charWolf.canvasHeight, platforms[1].y)
+        // console.log(charWolf.whereY + charWolf.canvasHeight <= pipes[0].y)
+
+        // true = pulo do jogador alcança o topo de algum obstáculo
+        // console.log(charWolf.whereY, charWolf.canvasHeight, charWolf.vy, platforms[1].y)
+        // console.log(charWolf.whereY + charWolf.canvasHeight + charWolf.vy >= pipes[0].y)
+
+        // true = ponta -> do jogador toca ponta <- de algo
+        // console.log(charWolf.whereX, charWolf.canvasWidth, platforms[1].x)
+        // console.log(charWolf.whereX + charWolf.canvasWidth >= platforms[1].x)
+
+        // true = ponta <- do jogador toca ponta -> de algo
+        // console.log(charWolf.whereX <= platforms[1].x + platforms[1].width)
+        // console.log(charWolf.whereX <= platforms[1].x + platforms[1].width)
+
+        // wolfDraw()
+
+        /*
+        this.image,
+        this.widthList[this.frameCounter],
+        this.fixedHeight,
+        this.widthList2[this.frameCounter],
+        this.srcHeight,
+        this.whereX,
+        this.whereY,
+        this.canvasWidth,
+        this.canvasHeight
+        // CHECAGEM DE CADA ÍNDICE: [0][0]...[1][1]...IMAGENS NÃO DEVEM INVADIR O ESPAÇO DAS OUTRAS
+        // AS COORDENADAS SEGUEM A ORDEM: PONTA DA IMAGEM 1 ATÉ PONTA DA PENÚLTIMA IMAGEM
+        ctx.drawImage(wolfWalkRight, 1380, 0, 175, 161, 400, 100, 300, 300)
+        [0, 17.5, 34.5, 51.5]
+        [16, 17.5, 17, 17]
+        0=ok...
+        */
+
+        // ctx.drawImage(koopaColorfulShell, 51.5, 0, 17, 16, 400, 200, 32, 32)
+
+        // Penalidade
+        lifePanel()
+
+        // console.log(canvas.height - koopa.canvasHeight)
+
+        charWolf.draw()
+        charWolf.frameAdmin()
+        charWolf.move()
+        /* ========================================================================================
+        // Em que contexto usar? Em jogos ou cenários que o jogador não precisa cair
+        // charWolf.gravity((byValue = 1))
+        ======================================================================================== */
+        charWolf.fallDown((byValue = 1))
+        charWolf.horizontalSetup((speed = 2.5))
+        charWolf.fail()
+
+        charWolf.landscapeMotion((obstacle = landscapes), (byValue = 3 * 0.66))
+
+        charWolf.landscapeMotion((obstacle = platforms), (byValue = 5))
+        charWolf.collisionBottom((obstacle = platforms))
+        charWolf.collisionHorizontal((obstacle = platforms), (reboundBy = 10))
+
+        charWolf.landscapeMotion((obstacle = hills), (byValue = 5))
+        charWolf.collisionBottom((obstacle = hills))
+        charWolf.collisionHorizontal((obstacle = hills), (reboundBy = 10))
+
+        charWolf.landscapeMotion((obstacle = pipes), (byValue = 5))
+        charWolf.collisionBottom((obstacle = pipes))
+        charWolf.collisionHorizontal((obstacle = pipes), (reboundBy = 10))
+
+        charWolf.landscapeMotion((obstacle = surfaces), (byValue = 5))
+        charWolf.collisionBottom((obstacle = surfaces))
+        charWolf.collisionHorizontal((obstacle = surfaces), (reboundBy = 10))
+
+        charWolf.landscapeMotion((obstacle = bricks), (byValue = 5))
+        charWolf.collisionBottom((obstacle = bricks))
+        charWolf.collisionHorizontal((obstacle = bricks), (reboundBy = 10))
+
+        charWolf.landscapeMotion(
+          (obstacle = enemies),
+          (byValue = 5),
+          (exception = true)
+        )
+        charWolf.collisionBottom((obstacle = enemies), (exception = true))
+        charWolf.collisionHorizontal(
+          (obstacle = enemies),
+          (reboundBy = 10),
+          (exception = true)
+        )
+
+        // IMPEDIR JOGADOR DE DEIXAR A TELA <-
+        let screenStart2 = landscapes[0].x
+        if (
+          (screenStart2 > 0 && keys.right.pressed === false) ||
+          (screenStart2 > 0 && keys.left.pressed === false)
+        ) {
+          console.log('INÍCIO')
+          charWolf.landscapeMotion(
+            (obstacle = landscapes),
+            (byValue = -3 * 0.66)
+          )
+          charWolf.landscapeMotion((obstacle = platforms), (byValue = -5))
+          charWolf.landscapeMotion((obstacle = hills), (byValue = -5))
+          charWolf.landscapeMotion((obstacle = pipes), (byValue = -5))
+          charWolf.landscapeMotion((obstacle = surfaces), (byValue = -5))
+          charWolf.landscapeMotion((obstacle = bricks), (byValue = -5))
+          charWolf.landscapeMotion(
+            (obstacle = enemies),
+            (byValue = -5),
+            (exception = true)
+          )
+        }
+
+        /* ========================================================================================
+        // CONTROLE DE MOVIMENTAÇÃO DE PLATAFORMAS
+        platformModularCounter++
+        if (platformModularCounter % platformModular === 0) {
+          if (platformBeginning < platformClosure) {
+            let choice = [true, false]
+            let result = choice[Math.floor(Math.random() * 2)]
+
+            platforms.forEach(index => {
+              index.newX = Math.floor(
+                Math.random() * canvas.width - index.width
+              )
+              index.newY = Math.floor(
+                Math.random() * canvas.height - index.height
+              )
+
+              let dx = index.newX
+              let dy = index.newY
+
+              if (result) {
+                index.x -= dx / (platformModular * 2)
+                index.y -= dy / (platformModular * 2)
+              } else {
+                index.x += dx / (platformModular * 2)
+                index.y += dy / (platformModular * 2)
+              }
+            })
+            platformBeginning++
+          } else {
+            platformBeginning = 0
+          }
+        }
+        ======================================================================================== /*
+
+        /* ========================================================================================
+        // CONTROLE DE MOVIMENTAÇÃO DE CANOS (SETUP FORA DA FUNÇÃO)
+        pipeDelayCounter++
+        if (pipeDelayCounter % pipeEndPoint === 0) {
+          if (pipeCounter < pipeEndPoint2) {
+            pipes.forEach(index => {
+              let choice = [true, false]
+              let result = choice[Math.floor(Math.random() * 2)]
+              if (result) {
+                index.x += Math.random() * 25 - 25
+              } else {
+                index.x -= Math.random() * 25 - 25
+              }
+              pipeCounter++
+            })
+          } else {
+            pipeCounter = 0
+          }
+        }
+        // console.log(pipeCounter)
+        ======================================================================================== */
+
+        /* ========================================================================================
+        liuKangDelayCounter++
+        if (liuKangDelayCounter % liuKangEndPoint === 0) {
+          if (liuKangCounter < liuKangEndPoint2) {
+            liuKang.forEach(index => {
+              let choice = [true, false]
+              let result = choice[Math.floor(Math.random() * 2)]
+              if (result) {
+                liuKang[0].image = liuKangForward
+                index.whereX += Math.random() * 25 - 25
+              } else {
+                liuKang[0].image = liuKangBackwards
+                index.whereX -= Math.random() * 25 - 25
+              }
+              liuKangCounter++
+            })
+          } else {
+            liuKangCounter = 0
+          }
+        }
+        ======================================================================================== */
+
+        requestAnimationFrame(animate)
+      }
+
+      init()
+      animate()
+
+      addEventListener('keydown', event => {
+        switch (event.key) {
+          case 'w':
+            // [-= é usado pois há gravidade garantindo a queda]
+            // keys.up.pressed = true
+            // player.vy -= 20
+            charWolf.go(
+              (image = wolfSpin),
+              (reference = wolfSetup),
+              (action = 'jump')
+            )
+            charWolf.vy -= 20
+            break
+          case 'd':
+            // [+= não é usado p/ não add + velocidade se segurar]
+            // player.vx = 5
+            keys.right.pressed = true
+            charWolf.go(
+              (image = wolfWalkRight),
+              (reference = wolfSetup),
+              (action = 'walk_right')
+            )
+            break
+          case 's':
+            break
+          case 'a':
+            keys.left.pressed = true
+            charWolf.go(
+              (image = wolfWalkLeft),
+              (reference = wolfSetup),
+              (action = 'walk_left')
+            )
+            break
+        }
+      })
+
+      addEventListener('keyup', event => {
+        switch (event.key) {
+          case 'w':
+            break
+          case 'd':
+            keys.right.pressed = false
+            charWolf.go(
+              (image = wolf),
+              (reference = wolfSetup),
+              (action = 'idle_right')
+            )
+            // player.vx = 0
+            break
+          case 's':
+            break
+          case 'a':
+            keys.left.pressed = false
+            charWolf.go(
+              (image = wolfIdleLeft),
+              (reference = wolfSetup),
+              (action = 'idle_left')
+            )
+            break
+        }
+      })
+    </script>
+
+    <script>
+      class PlayerDraft {
         constructor() {
           this.x = 50
           this.y = 500
@@ -190,780 +1307,6 @@
           })
         }
       }
-
-      class Platform {
-        constructor({ image, x, y, width, height }) {
-          this.image = image
-          this.x = x
-          this.y = y
-          this.width = width
-          this.height = height
-          this.newX = undefined
-          this.newY = undefined
-        }
-
-        draw() {
-          /* ctx.beginPath()
-                ctx.fillStyle = 'white'
-                ctx.fillRect(this.x, this.y, this.width, this.height)
-                ctx.fill() */
-          ctx.drawImage(this.image, this.x, this.y, this.width, this.height)
-        }
-
-        move() {
-          let delay = 0
-          let newDelay = Math.floor(Math.random() * (200 - 100) + 100)
-
-          // A cada 100 até 200 frames: mudar a posição em x e y
-          if (delay % newDelay === 0) {
-            this.newX = Math.random() * (canvas.width - this.width)
-            this.newY = Math.random() * (canvas.height - this.height)
-            console.log(this.newX, this.newY)
-          }
-
-          let dx = this.x - this.newX
-          let dy = this.y - this.newY
-
-          // Mover de forma homogênia (a divisão torna a transição muito menos devagar)
-          this.x -= dx / (newDelay * 2)
-          this.y -= dy / (newDelay * 2)
-        }
-      }
-
-      class Foe {
-        constructor({
-          image,
-          widthList,
-          frameCounter,
-          fixedHeight,
-          widthList2,
-          srcHeight,
-          whereX,
-          whereY,
-          canvasWidth,
-          canvasHeight,
-          modularCounter,
-          modular,
-          frameAmount
-        }) {
-          this.image = image
-          this.widthList = widthList
-          this.frameCounter = frameCounter
-          this.fixedHeight = fixedHeight
-          this.widthList2 = widthList2
-          this.srcHeight = srcHeight
-          this.whereX = whereX
-          this.whereY = whereY
-          this.canvasWidth = canvasWidth
-          this.canvasHeight = canvasHeight
-          this.modularCounter = modularCounter
-          this.modular = modular
-          this.frameAmount = frameAmount
-
-          this.vx = 0
-          this.vy = 1
-          // this.frameAmount = this.widthList.length - 1
-        }
-
-        gravity(byValue) {
-          // 19:05 [AQUI 1]
-          if (this.whereY + this.canvasHeight + this.vy <= canvas.height) {
-            this.vy += byValue
-          } else {
-            this.vy = 0
-          }
-        }
-
-        fallDown(byValue) {
-          if (this.whereY + this.canvasHeight + this.vy <= canvas.height) {
-            this.vy += byValue
-          }
-        }
-
-        fail() {
-          // 01:26:50
-          // Na presença de uma plataforma, "this.y" é sempre < que "canvas.height"
-          // Na ausência de uma plataforma, "this.y" pode ficar > que "canvas.height"
-          if (this.whereY > canvas.height) {
-            lives -= 1
-            init()
-          }
-        }
-
-        horizontalSetup(speed, obstacle) {
-          // 33:35 [AQUI 2] Jogador se mexe com base em "this.vx"
-          // 44:45 [AQUI 4] quanto maior o divisível, mais o jogador se apróximo da borda ->
-          // 45:25 [AQUI 5] quanto maior o divisível, mais o jogador se distancia da borda <-
-          if (keys.right.pressed && this.whereX < canvas.width / 1.4) {
-            this.vx = speed
-          } else if (keys.left.pressed && this.whereX > canvas.width / 4) {
-            this.vx = -speed
-          }
-          // GATILHO PARA MOVIMENTAÇÂO DE CENÁRIO
-          else {
-            this.vx = 0
-            keys.trigger.pressed = true
-            // Quando alcança o canto ->: condição 1 é falsa
-            // Quando alcança o canto <-: condição 2 é falsa
-            // console.log('1', this.x < canvas.width - this.width * 2)
-            // console.log('2', this.x > this.width)
-          }
-        }
-
-        landscapeMotion(obstacle, byValue) {
-          // 46:10 [ AQUI 6 ] Personagem em movimento ou estático VS Cenário móvel em direção oposta
-          if (keys.trigger.pressed && keys.right.pressed) {
-            obstacle.forEach(index => {
-              index.x -= byValue
-            })
-            // obstacle.x -= byValue
-          } else if (keys.trigger.pressed && keys.left.pressed) {
-            obstacle.forEach(index => {
-              index.x += byValue
-            })
-            // obstacle.x += byValue
-          }
-        }
-
-        move() {
-          this.whereX += this.vx
-          this.whereY += this.vy
-        }
-
-        collisionBottom(obstacle) {
-          obstacle.forEach(index => {
-            // 39:15 até 43:20 [AQUI 3]
-            if (
-              this.whereY + this.canvasHeight <= index.y &&
-              this.whereY + this.canvasHeight + this.vy >= index.y &&
-              this.whereX + this.canvasWidth >= index.x &&
-              this.whereX <= index.x + index.width
-            ) {
-              this.vy = 0
-            }
-          })
-        }
-
-        // NOVO
-        collisionHorizontal(obstacle, reboundBy) {
-          obstacle.forEach(index => {
-            if (
-              this.whereX + this.canvasWidth >= index.x &&
-              this.whereX <= index.x + index.width &&
-              this.whereY + this.canvasHeight >= index.y &&
-              this.whereY <= index.y + index.height
-            ) {
-              // Havendo colisão, o cenário precisa parar de mexer: "keys.trigger.pressed"
-              // Havendo colisão, o personagem precisa parar de mexer: "this.vx"
-              keys.trigger.pressed = false
-              if (keys.right.pressed) {
-                this.vx -= reboundBy
-              } else if (keys.left.pressed) {
-                this.vx += reboundBy
-              }
-
-              // console.log(this.x + this.width >= index.x, this.x <= index.x + index.width, this.y + this.height >= index.y, this.y <= index.y + index.height)
-            }
-          })
-        }
-
-        draw() {
-          ctx.drawImage(
-            this.image,
-            this.widthList[this.frameCounter],
-            this.fixedHeight,
-            this.widthList2[this.frameCounter],
-            this.srcHeight,
-            this.whereX,
-            this.whereY,
-            this.canvasWidth,
-            this.canvasHeight
-          )
-        }
-
-        frameAdmin() {
-          this.modularCounter++
-
-          if (this.modularCounter % this.modular === 0) {
-            if (this.frameCounter < this.frameAmount) {
-              console.log(this.widthList[this.frameCounter])
-              this.frameCounter++
-            } else {
-              this.frameCounter = 0
-            }
-          }
-        }
-
-        go(image, reference, action) {
-          if (action === 'walk_right') {
-            this.image = image
-            this.widthList = reference.walkRight.widthList
-            this.widthList2 = reference.walkRight.widthList2
-            this.srcHeight = reference.walkRight.srcHeight
-            this.frameAmount = reference.walkRight.frameAmount
-          } else if (action === 'walk_left') {
-            this.image = image
-            this.widthList = reference.walkLeft.widthList
-            this.widthList2 = reference.walkLeft.widthList2
-            this.srcHeight = reference.walkLeft.srcHeight
-            this.frameAmount = reference.walkLeft.frameAmount
-          } else if (action === 'idle_right') {
-            this.image = image
-            this.widthList = reference.idleRight.widthList
-            this.widthList2 = reference.idleRight.widthList2
-            this.srcHeight = reference.idleRight.srcHeight
-            this.frameAmount = reference.idleRight.frameAmount
-          } else if (action === 'idle_left') {
-            this.image = image
-            this.widthList = reference.idleLeft.widthList
-            this.widthList2 = reference.idleLeft.widthList2
-            this.srcHeight = reference.idleLeft.srcHeight
-            this.frameAmount = reference.idleLeft.frameAmount
-          } else if (action === 'jump') {
-            this.image = image
-            this.widthList = reference.spin.widthList
-            this.widthList2 = reference.spin.widthList2
-            this.srcHeight = reference.spin.srcHeight
-            this.frameAmount = reference.spin.frameAmount
-          } else if (action === 'jump_right') {
-            this.image = image
-            this.widthList = reference.jumpRight.widthList
-            this.widthList2 = reference.jumpRight.widthList2
-            this.srcHeight = reference.jumpRight.srcHeight
-            this.frameAmount = reference.jumpRight.frameAmount
-          }
-          else if (action === 'jump_right_edited') {
-            this.image = image
-            this.widthList = reference.jumpRightEdited.widthList
-            this.widthList2 = reference.jumpRightEdited.widthList2
-            this.srcHeight = reference.jumpRightEdited.srcHeight
-            this.frameAmount = reference.jumpRightEdited.frameAmount
-          }
-        }
-      }
-
-      function decisionMaking() {
-        let choice = [true, false]
-        let result = choice[Math.floor(Math.random() * 2)]
-        if (result) {
-          return true
-        } else {
-          return false
-        }
-      }
-
-      // JOGADOR
-      let wolf = new Image()
-      wolf.src = './assets/wolf_idle_right_tr.png'
-      let wolfIdleLeft = new Image()
-      wolfIdleLeft.src = './assets/wolf_idle_left_tr.png'
-      let wolfWalkRight = new Image()
-      wolfWalkRight.src = './assets/wolf_walk_right_tr.png'
-      let wolfWalkLeft = new Image()
-      wolfWalkLeft.src = './assets/wolf_walk_left_tr.png'
-      let wolfSpin = new Image()
-      wolfSpin.src = './assets/spin_rainbow_tr.png'
-      let wolfJumpRight = new Image()
-      wolfJumpRight.src = './assets/wolf_jump_right_tr.png'
-      let wolfJumpRightEdited = new Image()
-      wolfJumpRightEdited.src = './assets/wolf_jump_right_edited_tr.png'
-
-      // HABILIDADES
-      let koopaRedShell = new Image()
-      koopaRedShell.src = './assets/koopa_red_shell_tr.png'
-
-      // RECURSOS VIZUAIS
-      let backgroundDarkCyan = new Image()
-      backgroundDarkCyan.src = './assets/background.png'
-      let backgroundHills = new Image()
-      backgroundHills.src = './assets/hills.png'
-
-      // SUPERFÍCIE
-      let surface = new Image()
-      surface.src = './assets/mario_world_surface.png'
-
-      // PLATAFORMAS
-      let floatingPlatforms = new Image()
-      floatingPlatforms.src = './assets/platform_small.png'
-
-      // OBSTÁCULOS
-      let purplePipe = new Image()
-      purplePipe.src = './assets/purple_pipe_tr.png'
-      let hillSmall = new Image()
-      hillSmall.src = './assets/hill_small_tr.png'
-
-      let wolfSetup = {
-        idleRight: {
-          widthList: [0, 184, 365, 542, 715, 892, 1074],
-          widthList2: [183, 183, 177, 171, 174, 180, 185],
-          srcHeight: 175,
-          frameAmount: 6
-        },
-
-        idleLeft: {
-          widthList: [0, 185, 367, 544, 717, 894, 1074],
-          widthList2: [187, 183, 177, 173, 177, 181, 185],
-          srcHeight: 175,
-          frameAmount: 6
-        },
-
-        walkRight: {
-          widthList: [0, 172, 350, 510, 685, 860, 1033, 1205.7, 1380],
-          widthList2: [171, 169, 160, 175, 175, 175, 175, 175, 175],
-          srcHeight: 161,
-          frameAmount: 8
-        },
-        
-        // INVERTER O SPRITE DA DIREITA NO PAINT + INVERTER A ORDEM DOS FRAMES (CORRIGIR MOVIMENTO INVERSO)
-        walkLeft: {
-          // widthList: [0, 172, 344, 515, 690, 865, 1037, 1208, 1380],
-          widthList: [1380, 1208, 1037, 865, 690, 515, 344, 172, 0],
-          // widthList2: [171, 169, 174, 175, 175, 175, 172, 172, 172],
-          widthList2: [172, 172, 172, 175, 175, 175, 174, 169, 171],
-          srcHeight: 161,
-          frameAmount: 8
-        },
-      
-        jumpRight: {
-          widthList: [0, 189, 378, 567, 755, 945, 1135],
-          widthList2: [189, 189, 189, 189, 189, 189, 189],
-          srcHeight: 188,
-          frameAmount: 6
-        },
-
-        jumpRightEdited: {
-          widthList: [0, 178, 355, 531, 709, 886, 1064, 1242],
-          widthList2: [178, 178, 178, 178, 178, 178, 178, 178],
-          srcHeight: 176,
-          frameAmount: 7
-        },
-        
-        spin: {
-          widthList: [0, 191, 375, 563, 754, 940, 1126],
-          widthList2: [191, 186, 186, 186, 186, 186, 193],
-          srcHeight: 189,
-          frameAmount: 6
-        }
-      }
-
-      let charWolf = undefined
-      let landscapes = []
-      let surfaces = []
-      let platforms = []
-      let pipes = []
-      let hills = []
-
-      // Relacionamento: Player.fail()
-      function lifePanel() {
-        if (lives === 0) {
-          ctx.fillStyle = 'rgba(255,255,255)'
-          ctx.fillRect(0, 0, canvas.width, canvas.height)
-
-          ctx.fillStyle = 'blue'
-          ctx.font = '100px georgia'
-          ctx.fillText('GAME OVER', 100, 100)
-
-          ctx.fill()
-        } else {
-          ctx.fillStyle = 'cyan'
-          ctx.font = '25px georgia'
-          ctx.fillText('Vidas: ' + lives, 50, 50)
-        }
-      }
-
-      function init() {
-        // player = new Player()
-        landscapes = []
-        surfaces = []
-        platforms = []
-        pipes = []
-        hills = []
-
-        // Sobre a lista 1: No paint, é possível obter as coordenadas com o ponteiro em cada extremidade da imagem
-        charWolf = new Foe({
-          image: wolf,
-          widthList: wolfSetup.idleRight.widthList,
-          frameCounter: 0,
-          fixedHeight: 0,
-          widthList2: wolfSetup.idleRight.widthList2,
-          srcHeight: wolfSetup.idleRight.srcHeight,
-          whereX: 100,
-          whereY: 400,
-          canvasWidth: 70,
-          canvasHeight: 70,
-          modularCounter: 0,
-          modular: 5,
-          frameAmount: wolfSetup.idleRight.frameAmount
-        })
-
-        // PLANO DE FUNDO: GENÉRICO
-        landscapes.push(
-          new Landscape({
-            image: backgroundDarkCyan,
-            x: 0,
-            y: 0,
-            width: 11643,
-            height: 732
-          })
-        )
-
-        // PLANO DE FUNDO: PLANÍCIES
-        landscapes.push(
-          new Landscape({
-            image: backgroundHills,
-            x: 0,
-            y: 0,
-            width: 7545,
-            height: 592
-          })
-        )
-
-        // SUPERFÍCIE PRIMÁRIA (posição x usada como base nas secundárias)
-        surfaces.push(
-          new Platform({
-            image: surface,
-            x: 0,
-            y: 499 + 61,
-            width: 499,
-            height: 61
-          })
-        )
-
-        // SUPERFÍCIES SECUNDÁRIAS (usam o valor base + um valor de distanciamento definido por "Math.random()")
-        for (let i = 1; i <= 50; i++) {
-          let newSurface = new Platform({
-            image: surface,
-            x: surfaces[i - 1].x + Math.floor(Math.random() * 420 + 320),
-            y: 499 + 61,
-            width: 499,
-            height: 61
-          })
-          surfaces.push(newSurface)
-        }
-
-        // PLATAFORMA
-        platforms.push(
-          new Platform({
-            image: floatingPlatforms,
-            x: Math.floor((Math.random() * canvas.width) / 1.5 + 100),
-            y: Math.floor((Math.random() * canvas.height) / 3 + 100),
-            width: 201,
-            height: 40
-          })
-        )
-
-        // PLATAFORMAS SECUNDÁRIAS
-        for (let i = 1; i <= 50; i++) {
-          let newPlatform = new Platform({
-            image: floatingPlatforms,
-            x: platforms[i - 1].x + Math.floor(Math.random() * 400 + 300),
-            y: Math.floor(Math.random() * 300 + 250),
-            width: 201,
-            height: 40
-          })
-          platforms.push(newPlatform)
-        }
-
-        // CANO PRIMÁRIO
-        pipes.push(
-          new Platform({
-            image: purplePipe,
-            x: Math.random() * canvas.width,
-            y: 499,
-            width: 44,
-            height: 64
-          })
-        )
-
-        // CANOS SECUNDÁRIOS
-        for (let i = 1; i <= 50; i++) {
-          let newPipe = new Platform({
-            image: purplePipe,
-            x: pipes[i - 1].x + Math.floor(Math.random() * canvas.width + 300),
-            y: 499,
-            width: 44,
-            height: 64
-          })
-          pipes.push(newPipe)
-        }
-
-        // COLINA PEQUENA
-        hills.push(
-          new Platform({
-            image: hillSmall,
-            x: 400,
-            y: canvas.height - 49 * 3,
-            width: 64 * 3,
-            height: 49 * 3
-          })
-        )
-
-        // COLINAS PEQUENAS SECUNDÁRIAS
-        for (let i = 1; i <= 50; i++) {
-          let newSmallHill = new Platform({
-            image: hillSmall,
-            x: hills[i - 1].x + Math.floor(Math.random() * canvas.width + 300),
-            y: canvas.height - 49 * 3 + Math.random() * 20 - 20,
-            width: hills[i - 1].width,
-            height: hills[i - 1].height
-          })
-          hills.push(newSmallHill)
-        }
-      }
-
-      let pipeDelayCounter = 0
-      let pipeEndPoint = 15
-      let pipeCounter = 0
-      let pipeEndPoint2 = 5
-
-      // RECURSOS DE TESTE DA FUNÇÃO TESTE DE CRIAÇÃO DE SPRITES "wolfDraw()" (usado em animate())
-      let test2 = [0, 184, 365, 542, 715, 892, 1074]
-      let test3 = [183, 183, 177, 171, 174, 180, 185]
-      let wolfModularCounter = 0
-      let wolfModular = 10
-      let wolfFrameCounter = 0
-      let wolfFrameAmount = 6
-
-      function wolfDraw() {
-        ctx.drawImage(
-          wolf,
-          test2[wolfFrameCounter],
-          0,
-          test3[wolfFrameCounter],
-          198,
-          300,
-          300,
-          100,
-          100
-        )
-
-        wolfModularCounter++
-        if (wolfModularCounter % wolfModular === 0) {
-          if (wolfFrameCounter < wolfFrameAmount) {
-            wolfFrameCounter++
-          } else {
-            wolfFrameCounter = 0
-          }
-        }
-      }
-
-      function animate() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height)
-
-        landscapes.forEach(landscape => {
-          landscape.draw()
-        })
-
-        platforms.forEach(platform => {
-          platform.draw()
-        })
-
-        hills.forEach(hill => {
-          hill.draw()
-        })
-
-        pipes.forEach(pipe => {
-          pipe.draw()
-        })
-
-        surfaces.forEach(surface => {
-          surface.draw()
-        })
-
-        // wolfDraw()
-
-        /*
-        this.image,
-        this.widthList[this.frameCounter],
-        this.fixedHeight,
-        this.widthList2[this.frameCounter],
-        this.srcHeight,
-        this.whereX,
-        this.whereY,
-        this.canvasWidth,
-        this.canvasHeight 
-        // CHECAGEM DE CADA ÍNDICE: [0][0]...[1][1]...IMAGENS NÃO DEVEM INVADIR O ESPAÇO DAS OUTRAS
-        // AS COORDENADAS SEGUEM A ORDEM: PONTA DA IMAGEM 1 ATÉ PONTA DA PENÚLTIMA IMAGEM
-        ctx.drawImage(wolfWalkRight, 1380, 0, 175, 161, 400, 100, 300, 300)
-        [0, 120]
-        [57]
-        0=ok...
-        */
-        // ctx.drawImage(koopaRedShell, 0, 0, 15, 16, 400, 200, 32, 32)
-        
-        // Penalidade
-        lifePanel()
-
-        charWolf.draw()
-        charWolf.frameAdmin()
-        charWolf.move()
-        /* ========================================================================================
-        // Em que contexto usar? Em jogos ou cenários que o jogador não precisa cair
-        // charWolf.gravity((byValue = 1))
-        ======================================================================================== */
-        charWolf.fallDown((byValue = 1))
-        charWolf.horizontalSetup((speed = 2.5))
-        charWolf.fail()
-
-        charWolf.landscapeMotion((obstacle = landscapes), (byValue = 3 * 0.66))
-        charWolf.landscapeMotion((obstacle = platforms), (byValue = 5))
-        charWolf.landscapeMotion((obstacle = hills), (byValue = 5))
-        charWolf.landscapeMotion((obstacle = pipes), (byValue = 5))
-        charWolf.landscapeMotion((obstacle = surfaces), (byValue = 5))
-
-        charWolf.collisionBottom((obstacle = platforms))
-        charWolf.collisionBottom((obstacle = hills))
-        charWolf.collisionBottom((obstacle = pipes))
-        charWolf.collisionBottom((obstacle = surfaces))
-
-        charWolf.collisionHorizontal((obstacle = platforms), (reboundBy = 10))
-        charWolf.collisionHorizontal((obstacle = hills), (reboundBy = 10))
-        charWolf.collisionHorizontal((obstacle = pipes), (reboundBy = 10))
-        charWolf.collisionHorizontal((obstacle = surfaces), (reboundBy = 10))
-        
-
-        // IMPEDIR JOGADOR DE DEIXAR A TELA <-
-        let screenStart2 = landscapes[0].x
-        if (
-          (screenStart2 > 0 && keys.right.pressed === false) ||
-          (screenStart2 > 0 && keys.left.pressed === false)
-        ) {
-          console.log('INÍCIO')
-          charWolf.landscapeMotion(
-            (obstacle = landscapes),
-            (byValue = -3 * 0.66)
-          )
-          charWolf.landscapeMotion((obstacle = platforms), (byValue = -5))
-          charWolf.landscapeMotion((obstacle = hills), (byValue = -5))
-          charWolf.landscapeMotion((obstacle = pipes), (byValue = -5))
-          charWolf.landscapeMotion((obstacle = surfaces), (byValue = -5))
-        }
-
-        /* ========================================================================================
-        // CONTROLE DE MOVIMENTAÇÃO DE PLATAFORMAS
-        platformModularCounter++
-        if (platformModularCounter % platformModular === 0) {
-          if (platformBeginning < platformClosure) {
-            let choice = [true, false]
-            let result = choice[Math.floor(Math.random() * 2)]
-
-            platforms.forEach(index => {
-              index.newX = Math.floor(
-                Math.random() * canvas.width - index.width
-              )
-              index.newY = Math.floor(
-                Math.random() * canvas.height - index.height
-              )
-
-              let dx = index.newX
-              let dy = index.newY
-
-              if (result) {
-                index.x -= dx / (platformModular * 2)
-                index.y -= dy / (platformModular * 2)
-              } else {
-                index.x += dx / (platformModular * 2)
-                index.y += dy / (platformModular * 2)
-              }
-            })
-            platformBeginning++
-          } else {
-            platformBeginning = 0
-          }
-        }
-        ======================================================================================== /*
-
-        /* ========================================================================================
-        // CONTROLE DE MOVIMENTAÇÃO DE CANOS (SETUP FORA DA FUNÇÃO)
-        pipeDelayCounter++
-        if (pipeDelayCounter % pipeEndPoint === 0) {
-          if (pipeCounter < pipeEndPoint2) {
-            pipes.forEach(index => {
-              let choice = [true, false]
-              let result = choice[Math.floor(Math.random() * 2)]
-              if (result) {
-                index.x += Math.random() * 25 - 25
-              } else {
-                index.x -= Math.random() * 25 - 25
-              }
-              pipeCounter++
-            })
-          } else {
-            pipeCounter = 0
-          }
-        }
-        // console.log(pipeCounter)
-        ======================================================================================== */
-
-        /* ========================================================================================
-        liuKangDelayCounter++
-        if (liuKangDelayCounter % liuKangEndPoint === 0) {
-          if (liuKangCounter < liuKangEndPoint2) {
-            liuKang.forEach(index => {
-              let choice = [true, false]
-              let result = choice[Math.floor(Math.random() * 2)]
-              if (result) {
-                liuKang[0].image = liuKangForward
-                index.whereX += Math.random() * 25 - 25
-              } else {
-                liuKang[0].image = liuKangBackwards
-                index.whereX -= Math.random() * 25 - 25
-              }
-              liuKangCounter++
-            })
-          } else {
-            liuKangCounter = 0
-          }
-        }
-        ======================================================================================== */
-
-        requestAnimationFrame(animate)
-      }
-
-      init()
-      animate()
-
-      addEventListener('keydown', event => {
-        switch (event.key) {
-          case 'w':
-            // [-= é usado pois há gravidade garantindo a queda]
-            // keys.up.pressed = true
-            // player.vy -= 20
-            charWolf.go((image = wolfSpin), (reference = wolfSetup), (action = 'jump'))
-            charWolf.vy -= 20
-            break
-          case 'd':
-            // [+= não é usado p/ não add + velocidade se segurar]
-            // player.vx = 5
-            keys.right.pressed = true
-            charWolf.go((image = wolfWalkRight), (reference = wolfSetup), (action = 'walk_right'))
-            break
-          case 's':
-            break
-          case 'a':
-            keys.left.pressed = true
-            charWolf.go((image = wolfWalkLeft), (reference = wolfSetup), (action = 'walk_left'))
-            break
-        }
-      })
-
-      addEventListener('keyup', event => {
-        switch (event.key) {
-          case 'w':
-            break
-          case 'd':
-            keys.right.pressed = false
-            charWolf.go((image = wolf), (reference = wolfSetup), (action = 'idle_right'))
-            // player.vx = 0
-            break
-          case 's':
-            break
-          case 'a':
-            keys.left.pressed = false
-            charWolf.go((image = wolfIdleLeft), (reference = wolfSetup), (action = 'idle_left'))
-            break
-        }
-      })
     </script>
   </body>
 </html>

@@ -241,3 +241,11 @@ chars.push(
   })
 )
 */
+
+function integersBetween(min, max) { // min and max included 
+  return Math.floor(Math.random() * (max - min + 1) + min)
+}
+
+for (let i = 0; i < 100; i++) {
+  console.log(Math.floor(Math.random() * (400 - 34 + 1) + 34))
+}
