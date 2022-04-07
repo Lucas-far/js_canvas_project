@@ -38,12 +38,23 @@
       canvas.height = 600
 
       let lives = 3
+      let health = 100
+      let hit = 0
+
+      function integersBetween(min, max, float = false) {
+        if (float) {
+          return Math.random() * (max - min + 1) + min
+        }
+        return Math.floor(Math.random() * (max - min + 1) + min)
+      }
 
       const keys = {
         right: { pressed: false },
         left: { pressed: false },
+        up: { pressed: false },
         trigger: { pressed: false },
-        game: { reset: false }
+        greetings: { pressed: false },
+        ouch: { enabled: false }
       }
 
       class Landscape {
@@ -154,6 +165,7 @@
           // Na ausência de uma plataforma, "this.y" pode ficar > que "canvas.height"
           if (this.whereY > canvas.height) {
             lives -= 1
+            health = 100
             init()
           }
         }
@@ -214,6 +226,22 @@
         }
 
         collisionBottom(obstacle, exception = false) {
+          // true = pulo do jogador alcança o topo de algum obstáculo
+          // true = pulo do jogador alcança o topo de algum obstáculo
+          // true = ponta -> do jogador toca ponta <- de algo
+          // true = ponta <- do jogador toca ponta -> de algo
+
+          // console.log(charWolf.whereY, charWolf.canvasHeight, platforms[1].y)
+          // console.log(charWolf.whereY + charWolf.canvasHeight <= pipes[0].y)
+
+          // console.log(charWolf.whereY, charWolf.canvasHeight, charWolf.vy, platforms[1].y)
+          // console.log(charWolf.whereY + charWolf.canvasHeight + charWolf.vy >= pipes[0].y)
+
+          // console.log(charWolf.whereX, charWolf.canvasWidth, platforms[1].x)
+          // console.log(charWolf.whereX + charWolf.canvasWidth >= platforms[1].x)
+
+          // console.log(charWolf.whereX <= platforms[1].x + platforms[1].width)
+          // console.log(charWolf.whereX <= platforms[1].x + platforms[1].width)
           if (exception) {
             obstacle.forEach(index => {
               if (
@@ -244,7 +272,20 @@
           }
         }
 
-        // NOVO
+        // <test>
+        collisionBottomCustom(obstacle, xCustom = 0, yCustom = 0, width = 0) {
+          obstacle.forEach(index => {
+            if (
+              this.whereY + this.canvasHeight <= index.y - yCustom &&
+              this.whereY + this.canvasHeight + this.vy >= index.y - yCustom &&
+              this.whereX + this.canvasWidth >= index.x - xCustom &&
+              this.whereX <= index.x - xCustom + index.width - width
+            ) {
+              this.vy = 0
+            }
+          })
+        }
+
         collisionHorizontal(obstacle, reboundBy, exception = false) {
           if (exception) {
             obstacle.forEach(index => {
@@ -255,6 +296,9 @@
                 this.whereY <= index.whereY + index.canvasHeight
               ) {
                 console.log('Colisão')
+                keys.ouch.enabled = true
+                hit += 1
+
                 // Havendo colisão, o cenário precisa parar de mexer: "keys.trigger.pressed"
                 // Havendo colisão, o personagem precisa parar de mexer: "this.vx"
                 keys.trigger.pressed = false
@@ -283,6 +327,9 @@
                 this.whereY <= index.y + index.height
               ) {
                 console.log('Colisão')
+                keys.ouch.enabled = true
+                hit += 1
+
                 // Havendo colisão, o cenário precisa parar de mexer: "keys.trigger.pressed"
                 // Havendo colisão, o personagem precisa parar de mexer: "this.vx"
                 keys.trigger.pressed = false
@@ -367,6 +414,49 @@
             this.frameAmount = reference.jumpRightEdited.frameAmount
           }
         }
+
+        say() {
+          if (keys.greetings.pressed) {
+            ctx.drawImage(greetings, this.whereX, this.whereY - 150, 251, 154)
+          }
+        }
+
+        hit() {
+          if (keys.ouch.enabled) {
+            ctx.drawImage(
+              ouch,
+              this.whereX,
+              this.whereY - integersBetween(40, 60),
+              100,
+              41
+            )
+            setTimeout(function () {
+              keys.ouch.enabled = false
+            }, 800)
+          } else {
+            ctx.drawImage(ouch, -100, -100, 100, 41)
+          }
+        }
+
+        verticalControl() {
+          let roofTop = 0
+          if (this.whereY < roofTop) {
+            this.whereY -= this.whereY
+          }
+        }
+
+        findEdgeLeft(reference) {
+          // IMPEDIR JOGADOR DE DEIXAR A TELA <-
+          let screenEdgeLeft = reference.x
+          if (
+            (screenEdgeLeft > 0 && keys.right.pressed === false) ||
+            (screenEdgeLeft > 0 && keys.left.pressed === false)
+          ) {
+            return true
+          } else {
+            return false
+          }
+        }
       }
 
       class Foe {
@@ -412,7 +502,7 @@
             this.vy = 0
           }
         }
-        
+
         fallDown(byValue) {
           if (this.whereY + this.canvasHeight + this.vy <= canvas.height) {
             this.vy += byValue
@@ -425,13 +515,22 @@
         }
 
         spawn() {
-          let choice = [Math.random()]
-          let goTo = choice[Math.floor(Math.random() * 2)]
+          let moves = [
+            integersBetween(-10, 10, true),
+            integersBetween(-10, 10, true),
+            integersBetween(0, 1, true),
+            integersBetween(0, 1, true)
+          ]
+          let choice = moves[integersBetween(0, moves.length - 1)]
 
-          if (goTo < 0.22) {
-            this.whereX += integersBetween(0.1, 10) * 0.66
-          } else if (goTo > 0.77) {
-            this.whereX -= integersBetween(0.1, 10) * 0.66
+          if (choice === moves[0]) {
+            this.whereX += moves[0] * 0.66
+          } else if (choice === moves[1]) {
+            this.whereX -= moves[1] * 0.66
+          } else if (choice === moves[2]) {
+            this.whereY += moves[2] * 0.66
+          } else if (choice === moves[3]) {
+            this.whereY -= moves[3] * 0.66
           }
 
           /* this.whereY += Math.random() * 5
@@ -467,63 +566,111 @@
         }
       }
 
-      function decisionMaking() {
-        let choice = [true, false]
-        let result = choice[Math.floor(Math.random() * 2)]
-        if (result) {
-          return true
-        } else {
-          return false
+      // <test>
+      class TestHill {
+        constructor({ image, x, y, width, height }) {
+          this.image = image
+          this.x = x
+          this.y = y
+          this.width = width
+          this.height = height
+          this.newX = undefined
+          this.newY = undefined
         }
-      }
 
-      function integersBetween(min, max, float = false) {
-        if (float) {
-          return Math.random() * (max - min + 1) + min
+        draw() {
+          /* ctx.beginPath()
+                ctx.fillStyle = 'white'
+                ctx.fillRect(this.x, this.y, this.width, this.height)
+                ctx.fill() */
+          ctx.drawImage(this.image, this.x, this.y, this.width, this.height)
         }
-        return Math.floor(Math.random() * (max - min + 1) + min)
+
+        move() {
+          let delay = 0
+          let newDelay = Math.floor(Math.random() * (200 - 100) + 100)
+
+          // A cada 100 até 200 frames: mudar a posição em x e y
+          if (delay % newDelay === 0) {
+            this.newX = Math.random() * (canvas.width - this.width)
+            this.newY = Math.random() * (canvas.height - this.height)
+          }
+
+          let dx = this.x - this.newX
+          let dy = this.y - this.newY
+
+          // Mover de forma homogênia (a divisão torna a transição muito menos devagar)
+          this.x -= dx / (newDelay * 2)
+          this.y -= dy / (newDelay * 2)
+        }
       }
 
       // JOGADOR
       let wolf = new Image()
-      wolf.src = './assets/wolf_idle_right_tr.png'
       let wolfIdleLeft = new Image()
-      wolfIdleLeft.src = './assets/wolf_idle_left_tr.png'
       let wolfWalkRight = new Image()
-      wolfWalkRight.src = './assets/wolf_walk_right_tr.png'
       let wolfWalkLeft = new Image()
-      wolfWalkLeft.src = './assets/wolf_walk_left_tr.png'
       let wolfSpin = new Image()
-      wolfSpin.src = './assets/spin_rainbow_tr.png'
       let wolfJumpRight = new Image()
-      wolfJumpRight.src = './assets/wolf_jump_right_tr.png'
       let wolfJumpRightEdited = new Image()
-      wolfJumpRightEdited.src = './assets/wolf_jump_right_edited_tr.png'
+
+      wolf.src = './assets/players/wolf_idle_right_tr.png'
+      wolfIdleLeft.src = './assets/players/wolf_idle_left_tr.png'
+      wolfWalkRight.src = './assets/players/wolf_walk_right_tr.png'
+      wolfWalkLeft.src = './assets/players/wolf_walk_left_tr.png'
+      wolfSpin.src = './assets/players/spin_rainbow_tr.png'
+      wolfJumpRight.src = './assets/players/wolf_jump_right_tr.png'
+      wolfJumpRightEdited.src = './assets/players/wolf_jump_right_edited_tr.png'
+
+      // INTERAÇÕES
+      let greetings = new Image()
+      let ouch = new Image()
+
+      greetings.src = './assets/dialogue/greetings.gif'
+      ouch.src = './assets/dialogue/ouch.gif'
 
       // INIMIGOS
-      let koopaRedShell = new Image()
-      let koopaColorfulShell = new Image()
-      let koopaGoldenShell = new Image()
-      koopaRedShell.src = './assets/koopa_red_shell.gif'
-      koopaColorfulShell.src = './assets/koopa_colorful_shell.gif'
-      koopaGoldenShell.src = './assets/koopa_golden_shell.gif'
+      let koopaBlue = new Image()
+      let koopaColorful = new Image()
+      let koopaCyan = new Image()
+      let koopaGolden = new Image()
+      let koopaOrange = new Image()
+      let koopaRed = new Image()
+      let koopaViolet = new Image()
+      let koopaWhiteYellow = new Image()
+
+      koopaBlue.src = './assets/shells/shell_blue_tr.gif'
+      koopaColorful.src = './assets/shells/shell_colorful_tr.gif'
+      koopaCyan.src = './assets/shells/shell_cyan_tr.gif'
+      koopaGolden.src = './assets/shells/shell_golden_tr.gif'
+      koopaOrange.src = './assets/shells/shell_orange_tr.gif'
+      koopaRed.src = './assets/shells/shell_red_tr.gif'
+      koopaViolet.src = './assets/shells/shell_violet_tr.gif'
+      koopaWhiteYellow.src = './assets/shells/shell_white_yellow_tr.gif'
+
       let koopaShellTypes = [
-        koopaRedShell,
-        koopaColorfulShell,
-        koopaGoldenShell
+        koopaBlue,
+        koopaColorful,
+        koopaCyan,
+        koopaGolden,
+        koopaOrange,
+        koopaRed,
+        koopaViolet,
+        koopaWhiteYellow
       ]
 
       // RECURSOS VIZUAIS
       let backgroundDarkCyan = new Image()
-      backgroundDarkCyan.src = './assets/background.png'
       let backgroundHills = new Image()
-      backgroundHills.src = './assets/hills.png'
+      backgroundDarkCyan.src = './assets/landscapes/background.png'
+      backgroundHills.src = './assets/landscapes/hills.png'
 
       // SUPERFÍCIE
       let surface = new Image()
-      surface.src = './assets/mario_world_surface.png'
+      surface.src = './assets//surfaces/mario_world_surface.png'
 
       // PLATAFORMAS
+      let brick = new Image()
       let stonePlatform10 = new Image()
       let stonePlatform9 = new Image()
       let stonePlatform8 = new Image()
@@ -531,13 +678,14 @@
       let stonePlatform6 = new Image()
       let stonePlatform5 = new Image()
       let stonePlatform4 = new Image()
-      stonePlatform10.src = './assets/stone_platform10_tr.gif'
-      stonePlatform9.src = './assets/stone_platform9_tr.gif'
-      stonePlatform8.src = './assets/stone_platform8_tr.gif'
-      stonePlatform7.src = './assets/stone_platform7_tr.gif'
-      stonePlatform6.src = './assets/stone_platform6_tr.gif'
-      stonePlatform5.src = './assets/stone_platform5_tr.gif'
-      stonePlatform4.src = './assets/stone_platform4_tr.gif'
+      brick.src = './assets/platforms/happy_brick_tr.gif'
+      stonePlatform10.src = './assets/platforms/stone_platform10_tr.gif'
+      stonePlatform9.src = './assets/platforms/stone_platform9_tr.gif'
+      stonePlatform8.src = './assets/platforms/stone_platform8_tr.gif'
+      stonePlatform7.src = './assets/platforms/stone_platform7_tr.gif'
+      stonePlatform6.src = './assets/platforms/stone_platform6_tr.gif'
+      stonePlatform5.src = './assets/platforms/stone_platform5_tr.gif'
+      stonePlatform4.src = './assets/platforms/stone_platform4_tr.gif'
       let platformTypes = [
         stonePlatform10,
         stonePlatform9,
@@ -550,12 +698,16 @@
 
       // OBSTÁCULOS
       let purplePipe = new Image()
-      purplePipe.src = './assets/purple_pipe_tr.png'
       let hillSmall = new Image()
-      hillSmall.src = './assets/hill_small_tr.png'
-      let brick = new Image()
-      brick.src = './assets/happy_brick_tr.gif'
+      purplePipe.src = './assets/obstacles/purple_pipe_tr.png'
+      hillSmall.src = './assets/obstacles/hill_small_tr.png'
 
+      // <test>
+      let hillBig = new Image()
+      hillBig.src = './assets/hill_large_tr.png'
+      let testHill = []
+
+      // CONFIGURAÇÃO DO JOGADOR (ALTERA VALORES EM "charWolf")
       let wolfSetup = {
         idleRight: {
           widthList: [0, 184, 365, 542, 715, 892, 1074],
@@ -610,6 +762,7 @@
         }
       }
 
+      // VARS A RECEBEREM CONTEÚDOS EM "init()"
       let charWolf = undefined
       let enemies = []
       let landscapes = []
@@ -619,8 +772,8 @@
       let hills = []
       let bricks = []
 
-      // Relacionamento: Player.fail()
-      function lifePanel() {
+      // FUNÇÃO PARA GERENCIAR: "Player.fail()"
+      function lifeManager() {
         if (lives === 0) {
           ctx.fillStyle = 'rgba(255,255,255)'
           ctx.fillRect(0, 0, canvas.width, canvas.height)
@@ -637,8 +790,33 @@
         }
       }
 
-      function init() {
-        // player = new Player()
+      // GERENCIADOR DANO NO PERSONAGEM
+      function healthManager() {
+        if (hit >= 15) {
+          health -= 1
+          hit = 0
+        }
+
+        if (health === 0) {
+          ctx.fillStyle = 'rgba(255,255,255)'
+          ctx.fillRect(0, 0, canvas.width, canvas.height)
+
+          ctx.fillStyle = 'blue'
+          ctx.font = '100px georgia'
+          ctx.fillText('GAME OVER', 100, 100)
+
+          ctx.fill()
+        } else {
+          ctx.fillStyle = 'cyan'
+          ctx.font = '25px georgia'
+          ctx.fillText('Saúde: ' + health + '%', 50, 100)
+        }
+      }
+
+      function dataWipe() {
+        // <test>
+        testHill = []
+
         enemies = []
         landscapes = []
         surfaces = []
@@ -646,7 +824,9 @@
         pipes = []
         hills = []
         bricks = []
+      }
 
+      function charWolfSetup() {
         // Sobre a lista 1: No paint, é possível obter as coordenadas com o ponteiro em cada extremidade da imagem
         // Posição Y: altura do canvas Y - altura do sprite - altura da superfície
         charWolf = new Player({
@@ -664,15 +844,18 @@
           modular: 5,
           frameAmount: wolfSetup.idleRight.frameAmount
         })
+      }
 
+      function enemySetup() {
         // PRIMEIRO CASCO
         enemies.push(
           new Foe({
-            image: koopaShellTypes[integersBetween(0, 2)],
-            widthList: [0, 16, 33.5, 50],
+            image:
+              koopaShellTypes[integersBetween(0, koopaShellTypes.length - 1)],
+            widthList: [0, 17.5, 34.5, 51.5],
             frameCounter: 0,
             fixedHeight: 0,
-            widthList2: [16, 18, 17, 17],
+            widthList2: [16, 17.5, 17, 17],
             srcHeight: 16,
             whereX: integersBetween(700, 1000),
             whereY: 535,
@@ -684,29 +867,30 @@
           })
         )
 
-        // [0, 17.5, 34.5, 51.5]
-        // [16, 17.5, 17, 17]
         // CASCOS SECUNDÁRIOS
         for (let i = 1; i < 50; i++) {
           enemies.push(
             new Foe({
-              image: koopaShellTypes[integersBetween(0, 2)],
-              widthList: [0, 16, 33.5, 50],
+              image:
+                koopaShellTypes[integersBetween(0, koopaShellTypes.length - 1)],
+              widthList: [0, 17.5, 34.5, 51.5],
               frameCounter: 0,
               fixedHeight: 0,
-              widthList2: [16, 18, 17, 17],
+              widthList2: [16, 17.5, 17, 17],
               srcHeight: 16,
-              whereX: enemies[i - 1].whereX + integersBetween(700, 1000),
+              whereX: enemies[i - 1].whereX + integersBetween(20, 700),
               whereY: 535,
               canvasWidth: 32,
               canvasHeight: 32,
               modularCounter: 0,
-              modular: 20,
+              modular: 10,
               frameAmount: 3
             })
           )
         }
+      }
 
+      function landscapeSetup() {
         // PLANO DE FUNDO: GENÉRICO
         landscapes.push(
           new Landscape({
@@ -728,13 +912,15 @@
             height: 592
           })
         )
+      }
 
+      function surfaceSetup() {
         // SUPERFÍCIE PRIMÁRIA (posição x usada como base nas secundárias)
         surfaces.push(
           new Platform({
             image: surface,
             x: 0,
-            y: integersBetween(560, 570),
+            y: 565,
             width: 499,
             height: 61
           })
@@ -747,13 +933,15 @@
           let newSurface = new Platform({
             image: surface,
             x: surfaces[i - 1].x + integersBetween(499 + 80, 499 + 140, true),
-            y: integersBetween(560, 570),
+            y: 565,
             width: 499,
             height: 61
           })
           surfaces.push(newSurface)
         }
+      }
 
+      function platformSetup() {
         // PLATAFORMA PRIMÁRIA
         platforms.push(
           new Platform({
@@ -776,7 +964,9 @@
           })
           platforms.push(newPlatform)
         }
+      }
 
+      function objectSetup() {
         // CANO PRIMÁRIO
         pipes.push(
           new Platform({
@@ -815,7 +1005,7 @@
         for (let i = 1; i <= 50; i++) {
           let newSmallHill = new Platform({
             image: hillSmall,
-            x: hills[i - 1].x + integersBetween(200, 1000, true),
+            x: hills[i - 1].x + integersBetween(700, 1400, true),
             y: integersBetween(445, 470, true),
             width: 64 * integersBetween(2, 4, true),
             height: 49 * integersBetween(2.7, 4, true)
@@ -845,14 +1035,31 @@
           })
           bricks.push(newBrick)
         }
+
+        // <test>
+        testHill.push(
+          new TestHill({
+            image: hillBig,
+            x: 200,
+            y: 399,
+            width: 257 * 3,
+            height: 130 * 2
+          })
+        )
       }
 
-      let pipeDelayCounter = 0
-      let pipeEndPoint = 15
-      let pipeCounter = 0
-      let pipeEndPoint2 = 5
+      // FUNÇÃO PARA INSERÇÃO DE CONTEÚDO AO CANVAS
+      function init() {
+        dataWipe()
+        charWolfSetup()
+        enemySetup()
+        landscapeSetup()
+        surfaceSetup()
+        platformSetup()
+        objectSetup()
+      }
 
-      // RECURSOS DE TESTE DA FUNÇÃO TESTE DE CRIAÇÃO DE SPRITES "wolfDraw()" (usado em animate())
+      // RECURSOS DE TESTE DA FUNÇÃO TESTE DE CRIAÇÃO DE SPRITES "wolfDraw()"
       let test2 = [0, 184, 365, 542, 715, 892, 1074]
       let test3 = [183, 183, 177, 171, 174, 180, 185]
       let wolfModularCounter = 0
@@ -860,6 +1067,7 @@
       let wolfFrameCounter = 0
       let wolfFrameAmount = 6
 
+      // FUNÇÃO DE DEMONSTRAÇÃO PARA CRIAR SPRITES (usar em "animate()")
       function wolfDraw() {
         ctx.drawImage(
           wolf,
@@ -883,229 +1091,166 @@
         }
       }
 
+      function canvasEnvironment(content, contentBox) {
+        if (content === 'landscape') {
+          contentBox.forEach(landscape => {
+            landscape.draw()
+          })
+        } else if (content === 'platform') {
+          contentBox.forEach(platform => {
+            platform.draw()
+          })
+        } else if (content === 'hill') {
+          contentBox.forEach(hill => {
+            hill.draw()
+          })
+        } else if (content === 'pipe') {
+          contentBox.forEach(pipe => {
+            pipe.draw()
+          })
+        } else if (content === 'brick') {
+          contentBox.forEach(brick => {
+            brick.draw()
+          })
+        } else if (content === 'surface') {
+          contentBox.forEach(surface => {
+            surface.draw()
+          })
+        } else if (content === 'enemy') {
+          contentBox.forEach(enemy => {
+            enemy.draw()
+            enemy.frameAdmin()
+            // enemy.move()
+            // enemy.fallDown((byValue = 1))
+            enemy.spawn()
+          })
+        }
+      }
+
+      function playerTools(reference) {
+        reference.draw()
+        reference.frameAdmin()
+        reference.move()
+        // charWolf.gravity((byValue = 1)) // Caso o jogador não precise cair
+        reference.fallDown((byValue = 1))
+        reference.horizontalSetup((speed = 2.5))
+        reference.fail()
+        reference.verticalControl()
+      }
+
+      function playerTalk(reference) {
+        reference.say()
+        reference.hit()
+      }
+
+      function interaction(reference, against) {
+        if (against === 'landscape') {
+          reference.landscapeMotion(
+            (obstacle = landscapes),
+            (byValue = 3 * 0.66)
+          )
+        } else if (against === 'platform') {
+          reference.landscapeMotion(platforms, 5)
+          reference.collisionBottom(platforms)
+          reference.collisionHorizontal(platforms, 3)
+        } else if (against === 'hill') {
+          reference.landscapeMotion(hills, 5)
+          reference.collisionBottom(hills)
+          reference.collisionHorizontal(hills, 3)
+        } else if (against === 'purple_pipe') {
+          reference.landscapeMotion(pipes, 5)
+          reference.collisionBottom(pipes)
+          reference.collisionHorizontal(pipes, 3)
+        } else if (against === 'surface') {
+          reference.landscapeMotion(surfaces, 5)
+          reference.collisionBottom(surfaces)
+          // reference.collisionHorizontal((obstacle = surfaces), (reboundBy = 10))
+        } else if (against === 'bricks') {
+          reference.landscapeMotion(bricks, 5)
+          reference.collisionBottom(bricks)
+          reference.collisionHorizontal(bricks, 3)
+        } else if (against === 'enemy') {
+          reference.landscapeMotion(enemies, 5, true)
+          reference.collisionBottom(enemies, true)
+          reference.collisionHorizontal(enemies, 3, true)
+        } else if (against === 'freeze_scenario_at_end_left') {
+          reference.landscapeMotion(landscapes, -3 * 0.66)
+          reference.landscapeMotion(platforms, -5)
+          reference.landscapeMotion(hills, -5)
+          reference.landscapeMotion(pipes, -5)
+          reference.landscapeMotion(surfaces, -5)
+          reference.landscapeMotion(bricks, -5)
+          reference.landscapeMotion(enemies, -5, true)
+        }
+      }
+
+      // FUNÇÃO PARA ATUALIZAR VALORES = ANIMAR CONTEÚDOS DO CANVAS
       function animate() {
         ctx.clearRect(0, 0, canvas.width, canvas.height)
 
-        landscapes.forEach(landscape => {
-          landscape.draw()
+        canvasEnvironment('landscape', landscapes)
+        canvasEnvironment('platform', platforms)
+        canvasEnvironment('hill', hills)
+        canvasEnvironment('pipe', pipes)
+        canvasEnvironment('brick', bricks)
+        canvasEnvironment('surface', surfaces)
+        canvasEnvironment('enemy', enemies)
+
+        // <test>
+        testHill.forEach(index => {
+          // index.draw()
         })
 
-        platforms.forEach(platform => {
-          platform.draw()
-        })
+        /* TUTORIAL SOBRE SPRITES
+        
+        PROPRIEDADES ORDENADAS DA FUNÇÃO "drawImage()"
+            this.image       this.widthList[this.frameCounter]    this.fixedHeight    this.widthList2[this.frameCounter] 
+            this.srcHeight   this.whereX                          this.whereY         this.canvasWidth
+            this.canvasHeight
 
-        hills.forEach(hill => {
-          hill.draw()
-        })
+        PADRÃO DE ANÁLISE (no paint)
+            Abrir a imagem e aumentar o zoom
+            Encontrar cada uma das coordenadas x do sprite
+            As coordenadas seguem a ordem: ponta da imagem 1 (->) até a ponta da penúltima imagem (->)
+        
+        PARÂMETROS IMPORTANTES
+            Para que os sprites renderizem corretamente, é preciso suas coordenadas corretas
+            As coordenadas da lista 1 são encontradas seguindo o passo anterior
+            As coordenadas da lista 2 são encontradas por tentativa e erro da imagem desenhada no CANVAS
+            Na função "drawImage()" os índices dessas duas listas serão relacionados para renderizar o sprite
 
-        pipes.forEach(pipe => {
-          pipe.draw()
-        })
+        EXEMPLOS DE LISTA
+            [0, 17.5, 34.5, 51.5]
+            [16, 17.5, 17, 17]
 
-        bricks.forEach(brick => {
-          brick.draw()
-        })
-
-        surfaces.forEach(surface => {
-          surface.draw()
-        })
-
-        enemies.forEach(enemy => {
-          enemy.draw()
-          enemy.frameAdmin()
-          // enemy.move()
-          // enemy.fallDown((byValue = 1))
-          enemy.spawn()
-        })
-
-        // true = pulo do jogador alcança o topo de algum obstáculo
-        // console.log(charWolf.whereY, charWolf.canvasHeight, platforms[1].y)
-        // console.log(charWolf.whereY + charWolf.canvasHeight <= pipes[0].y)
-
-        // true = pulo do jogador alcança o topo de algum obstáculo
-        // console.log(charWolf.whereY, charWolf.canvasHeight, charWolf.vy, platforms[1].y)
-        // console.log(charWolf.whereY + charWolf.canvasHeight + charWolf.vy >= pipes[0].y)
-
-        // true = ponta -> do jogador toca ponta <- de algo
-        // console.log(charWolf.whereX, charWolf.canvasWidth, platforms[1].x)
-        // console.log(charWolf.whereX + charWolf.canvasWidth >= platforms[1].x)
-
-        // true = ponta <- do jogador toca ponta -> de algo
-        // console.log(charWolf.whereX <= platforms[1].x + platforms[1].width)
-        // console.log(charWolf.whereX <= platforms[1].x + platforms[1].width)
-
-        // wolfDraw()
-
-        /*
-        this.image,
-        this.widthList[this.frameCounter],
-        this.fixedHeight,
-        this.widthList2[this.frameCounter],
-        this.srcHeight,
-        this.whereX,
-        this.whereY,
-        this.canvasWidth,
-        this.canvasHeight
-        // CHECAGEM DE CADA ÍNDICE: [0][0]...[1][1]...IMAGENS NÃO DEVEM INVADIR O ESPAÇO DAS OUTRAS
-        // AS COORDENADAS SEGUEM A ORDEM: PONTA DA IMAGEM 1 ATÉ PONTA DA PENÚLTIMA IMAGEM
-        ctx.drawImage(wolfWalkRight, 1380, 0, 175, 161, 400, 100, 300, 300)
-        [0, 17.5, 34.5, 51.5]
-        [16, 17.5, 17, 17]
-        0=ok...
+        FUNÇÃO A SER INSERIDA PARA DESCOBRIR "x" da lista 2
+            ctx.drawImage(wolfWalkRight, 1380, 0, 175, 161, 400, 100, 300, 300)
+        
         */
 
-        // ctx.drawImage(koopaColorfulShell, 51.5, 0, 17, 16, 400, 200, 32, 32)
+        lifeManager()
+        healthManager()
 
-        // Penalidade
-        lifePanel()
+        playerTools(charWolf)
+        playerTalk(charWolf)
 
-        // console.log(canvas.height - koopa.canvasHeight)
+        interaction(charWolf, 'landscape')
+        interaction(charWolf, 'platform')
+        interaction(charWolf, 'hill')
+        interaction(charWolf, 'purple_pipe')
+        interaction(charWolf, 'surface')
+        interaction(charWolf, 'bricks')
+        interaction(charWolf, 'enemy')
 
-        charWolf.draw()
-        charWolf.frameAdmin()
-        charWolf.move()
-        /* ========================================================================================
-        // Em que contexto usar? Em jogos ou cenários que o jogador não precisa cair
-        // charWolf.gravity((byValue = 1))
-        ======================================================================================== */
-        charWolf.fallDown((byValue = 1))
-        charWolf.horizontalSetup((speed = 2.5))
-        charWolf.fail()
+        // <test>
+        // charWolf.landscapeMotion((obstacle = testHill), (byValue = 5))
+        // charWolf.collisionBottomCustom((obstacle = testHill), (xCustom = -100))
 
-        charWolf.landscapeMotion((obstacle = landscapes), (byValue = 3 * 0.66))
+        let scanEdge = charWolf.findEdgeLeft((reference = landscapes[0]))
 
-        charWolf.landscapeMotion((obstacle = platforms), (byValue = 5))
-        charWolf.collisionBottom((obstacle = platforms))
-        charWolf.collisionHorizontal((obstacle = platforms), (reboundBy = 10))
-
-        charWolf.landscapeMotion((obstacle = hills), (byValue = 5))
-        charWolf.collisionBottom((obstacle = hills))
-        charWolf.collisionHorizontal((obstacle = hills), (reboundBy = 10))
-
-        charWolf.landscapeMotion((obstacle = pipes), (byValue = 5))
-        charWolf.collisionBottom((obstacle = pipes))
-        charWolf.collisionHorizontal((obstacle = pipes), (reboundBy = 10))
-
-        charWolf.landscapeMotion((obstacle = surfaces), (byValue = 5))
-        charWolf.collisionBottom((obstacle = surfaces))
-        charWolf.collisionHorizontal((obstacle = surfaces), (reboundBy = 10))
-
-        charWolf.landscapeMotion((obstacle = bricks), (byValue = 5))
-        charWolf.collisionBottom((obstacle = bricks))
-        charWolf.collisionHorizontal((obstacle = bricks), (reboundBy = 10))
-
-        charWolf.landscapeMotion(
-          (obstacle = enemies),
-          (byValue = 5),
-          (exception = true)
-        )
-        charWolf.collisionBottom((obstacle = enemies), (exception = true))
-        charWolf.collisionHorizontal(
-          (obstacle = enemies),
-          (reboundBy = 10),
-          (exception = true)
-        )
-
-        // IMPEDIR JOGADOR DE DEIXAR A TELA <-
-        let screenStart2 = landscapes[0].x
-        if (
-          (screenStart2 > 0 && keys.right.pressed === false) ||
-          (screenStart2 > 0 && keys.left.pressed === false)
-        ) {
-          console.log('INÍCIO')
-          charWolf.landscapeMotion(
-            (obstacle = landscapes),
-            (byValue = -3 * 0.66)
-          )
-          charWolf.landscapeMotion((obstacle = platforms), (byValue = -5))
-          charWolf.landscapeMotion((obstacle = hills), (byValue = -5))
-          charWolf.landscapeMotion((obstacle = pipes), (byValue = -5))
-          charWolf.landscapeMotion((obstacle = surfaces), (byValue = -5))
-          charWolf.landscapeMotion((obstacle = bricks), (byValue = -5))
-          charWolf.landscapeMotion(
-            (obstacle = enemies),
-            (byValue = -5),
-            (exception = true)
-          )
+        if (scanEdge) {
+          interaction(charWolf, 'freeze_scenario_at_end_left')
         }
-
-        /* ========================================================================================
-        // CONTROLE DE MOVIMENTAÇÃO DE PLATAFORMAS
-        platformModularCounter++
-        if (platformModularCounter % platformModular === 0) {
-          if (platformBeginning < platformClosure) {
-            let choice = [true, false]
-            let result = choice[Math.floor(Math.random() * 2)]
-
-            platforms.forEach(index => {
-              index.newX = Math.floor(
-                Math.random() * canvas.width - index.width
-              )
-              index.newY = Math.floor(
-                Math.random() * canvas.height - index.height
-              )
-
-              let dx = index.newX
-              let dy = index.newY
-
-              if (result) {
-                index.x -= dx / (platformModular * 2)
-                index.y -= dy / (platformModular * 2)
-              } else {
-                index.x += dx / (platformModular * 2)
-                index.y += dy / (platformModular * 2)
-              }
-            })
-            platformBeginning++
-          } else {
-            platformBeginning = 0
-          }
-        }
-        ======================================================================================== /*
-
-        /* ========================================================================================
-        // CONTROLE DE MOVIMENTAÇÃO DE CANOS (SETUP FORA DA FUNÇÃO)
-        pipeDelayCounter++
-        if (pipeDelayCounter % pipeEndPoint === 0) {
-          if (pipeCounter < pipeEndPoint2) {
-            pipes.forEach(index => {
-              let choice = [true, false]
-              let result = choice[Math.floor(Math.random() * 2)]
-              if (result) {
-                index.x += Math.random() * 25 - 25
-              } else {
-                index.x -= Math.random() * 25 - 25
-              }
-              pipeCounter++
-            })
-          } else {
-            pipeCounter = 0
-          }
-        }
-        // console.log(pipeCounter)
-        ======================================================================================== */
-
-        /* ========================================================================================
-        liuKangDelayCounter++
-        if (liuKangDelayCounter % liuKangEndPoint === 0) {
-          if (liuKangCounter < liuKangEndPoint2) {
-            liuKang.forEach(index => {
-              let choice = [true, false]
-              let result = choice[Math.floor(Math.random() * 2)]
-              if (result) {
-                liuKang[0].image = liuKangForward
-                index.whereX += Math.random() * 25 - 25
-              } else {
-                liuKang[0].image = liuKangBackwards
-                index.whereX -= Math.random() * 25 - 25
-              }
-              liuKangCounter++
-            })
-          } else {
-            liuKangCounter = 0
-          }
-        }
-        ======================================================================================== */
 
         requestAnimationFrame(animate)
       }
@@ -1119,32 +1264,38 @@
             // [-= é usado pois há gravidade garantindo a queda]
             // keys.up.pressed = true
             // player.vy -= 20
-            charWolf.go(
-              (image = wolfSpin),
-              (reference = wolfSetup),
-              (action = 'jump')
-            )
+            charWolf.go(wolfSpin, wolfSetup, 'jump')
             charWolf.vy -= 20
+
+            if (charWolf.vy > -20) {
+              charWolf.vy = 0
+            }
+            break
+          case 'q':
+            // [-= é usado pois há gravidade garantindo a queda]
+            // keys.up.pressed = true
+            // player.vy -= 20
+            charWolf.go(wolfSpin, wolfSetup, 'jump')
+            charWolf.vy -= 15
+
+            if (charWolf.vy > -15) {
+              charWolf.vy = 0
+            }
             break
           case 'd':
             // [+= não é usado p/ não add + velocidade se segurar]
             // player.vx = 5
             keys.right.pressed = true
-            charWolf.go(
-              (image = wolfWalkRight),
-              (reference = wolfSetup),
-              (action = 'walk_right')
-            )
+            charWolf.go(wolfWalkRight, wolfSetup, 'walk_right')
             break
           case 's':
             break
           case 'a':
             keys.left.pressed = true
-            charWolf.go(
-              (image = wolfWalkLeft),
-              (reference = wolfSetup),
-              (action = 'walk_left')
-            )
+            charWolf.go(wolfWalkLeft, wolfSetup, 'walk_left')
+            break
+          case '1':
+            keys.greetings.pressed = true
             break
         }
       })
@@ -1155,22 +1306,17 @@
             break
           case 'd':
             keys.right.pressed = false
-            charWolf.go(
-              (image = wolf),
-              (reference = wolfSetup),
-              (action = 'idle_right')
-            )
+            charWolf.go(wolf, wolfSetup, 'idle_right')
             // player.vx = 0
             break
           case 's':
             break
           case 'a':
             keys.left.pressed = false
-            charWolf.go(
-              (image = wolfIdleLeft),
-              (reference = wolfSetup),
-              (action = 'idle_left')
-            )
+            charWolf.go(wolfIdleLeft, wolfSetup, 'idle_left')
+            break
+          case '1':
+            keys.greetings.pressed = false
             break
         }
       })

@@ -128,15 +128,6 @@ for (let i = 0; i < 100; i++) {
 /* let moveDelay = Math.floor(Math.random() * (200 - 100) + 100)
 console.log(moveDelay) */
 
-function getRndInteger(min, max, exact=false) {
-  if (exact) {
-    return Math.floor(Math.random() * (max - min + 1) ) + min;
-  } else {
-    return Math.random() * (max - min + 1) + min;
-  }
-  
-}
-
 /* for (let i = 0; i < 50; i++) {
   console.log(getRndInteger(2, 7, exact=true))
 } */
@@ -147,8 +138,7 @@ function getRndInteger(min, max, exact=false) {
 
 // console.log(400 / 3 + 20)
 
-console.log(1200 / 1.4)
-console.log(1200 / 4)
+
 
 /*
 // JOGADOR
@@ -242,10 +232,6 @@ chars.push(
 )
 */
 
-function integersBetween(min, max) { // min and max included 
-  return Math.floor(Math.random() * (max - min + 1) + min)
-}
-
-for (let i = 0; i < 100; i++) {
-  console.log(Math.floor(Math.random() * (400 - 34 + 1) + 34))
-}
+var delay = 1000; //1 second
+console.log('py')
+setTimeout(function() {console.log('js')}, 3000);

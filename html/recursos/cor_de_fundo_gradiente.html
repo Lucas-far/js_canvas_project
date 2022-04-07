@@ -19,11 +19,19 @@
       #text {
         color: transparent;
         position: absolute;
-        top: 50%;
+        top: 10%;
         left: 50%;
         transform: translate(-50%, -50%);
         text-align: justify;
         margin-top: 200px;
+        padding: 20px;
+        font-size: 1.2rem;
+        width: 90%;
+        height: 50%;
+        line-height: 2;
+        border-radius: 10px;
+        font-family: consolas;
+        background-color: rgba(0, 0, 0, 0.5);
       }
     </style>
   </head>
@@ -48,19 +56,20 @@
       function rgbTable() {
         let arrayVar = []
 
-        for (let i = 0; i < 255; i++) {
+        for (let i = 0; i <= 255; i++) {
           arrayVar.push(i)
         }
 
-        let indexForRed = randomIndex(arrayVar)
-        let indexForGreen = randomIndex(arrayVar)
-        let indexForBlue = randomIndex(arrayVar)
+        let red = randomIndex(arrayVar)
+        let green = randomIndex(arrayVar)
+        let blue = randomIndex(arrayVar)
 
-        return `rgba(${arrayVar[indexForRed]},${arrayVar[indexForGreen]},${arrayVar[indexForBlue]})`
+        return `rgba(${arrayVar[red]},${arrayVar[green]},${arrayVar[blue]})`
       }
 
       const message = [
-        'HTML5 (Hypertext Markup Language, atualmente em sua 5° versão) é uma linguagem de marcação para a World Wide Web e é uma tecnologia chave da Internet, originalmente proposto por Opera Software.[1] É a quinta versão da linguagem HTML. Esta nova versão traz consigo importantes mudanças quanto ao papel do HTML no mundo da Web, através de novas funcionalidades como semântica e acessibilidade. Possibilita o uso de novos recursos antes possíveis apenas com a aplicação de outras tecnologias. Sua essência tem sido melhorar a linguagem com o suporte para as mais recentes multimídias, enquanto a mantém facilmente legível por seres humanos e consistentemente compreendida por computadores e outros dispositivos (navegadores, parsers etc). O HTML5 será o novo padrão para HTML, XHTML, e HTML DOM. Atualmente, está em fase de esboço, porém diversos navegadores já implementam algumas de suas funcionalidades.'
+        'HTML5 (Hypertext Markup Language, atualmente em sua 5° versão) é uma linguagem de marcação para a World Wide Web e é uma tecnologia chave da Internet, originalmente proposto por Opera Software.[1] É a quinta versão da linguagem HTML. Esta nova versão traz consigo importantes mudanças quanto ao papel do HTML no mundo da Web, através de novas funcionalidades como semântica e acessibilidade. Possibilita o uso de novos recursos antes possíveis apenas com a aplicação de outras tecnologias. Sua essência tem sido melhorar a linguagem com o suporte para as mais recentes multimídias, enquanto a mantém facilmente legível por seres humanos e consistentemente compreendida por computadores e outros dispositivos (navegadores, parsers etc). O HTML5 será o novo padrão para HTML, XHTML, e HTML DOM. Atualmente, está em fase de esboço, porém diversos navegadores já implementam algumas de suas funcionalidades.',
+        'JavaScript (frequentemente abreviado como JS) é uma linguagem de programação interpretada estruturada, de script em alto nível com tipagem dinâmica fraca e multiparadigma (protótipos, orientado a objeto, imperativo e, funcional).[2][3] Juntamente com HTML e CSS, o JavaScript é uma das três principais tecnologias da World Wide Web. JavaScript permite páginas da Web interativas e, portanto, é uma parte essencial dos aplicativos da web. A grande maioria dos sites usa, e todos os principais navegadores têm um mecanismo JavaScript dedicado para executá-lo.'
       ]
 
       // Evento de teclado, para mudar a cor conforme uma tecla for pressionada
@@ -78,8 +87,13 @@
             document.body.style.backgroundImage = `linear-gradient(45deg, ${chosenInks[0]}, ${chosenInks[1]}, ${chosenInks[2]}, ${chosenInks[3]})`
             document.getElementById('background-image').innerHTML = chosenInks
             break
-          case 'e':
+          case '1':
             document.getElementById('text').innerHTML = message[0]
+            document.getElementById('text').style.color = `${rgbTable()}`
+            // document.getElementById('text').style.backgroundColor = 'rgba(0, 0, 0, 0.4)'
+            break
+          case '2':
+            document.getElementById('text').innerHTML = message[1]
             document.getElementById('text').style.color = `${rgbTable()}`
             break
         }
